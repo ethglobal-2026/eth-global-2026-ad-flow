@@ -3,9 +3,13 @@
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { NextPage } from "next";
-import { parseUnits } from "viem";
+import { parseEventLogs, parseUnits } from "viem";
 import { arcTestnet } from "viem/chains";
-import { useAccount, useSwitchChain } from "wagmi";
+import { useAccount, usePublicClient, useSwitchChain } from "wagmi";
+import type {
+  CreateAdvertiserCampaignDealRequest,
+  CreateAdvertiserCampaignDealResponse,
+} from "~~/app/api/advertisers/[id]/campaigns/[campaignId]/deals/route";
 import type {
   CreateAdvertiserCampaignRequest,
   CreateAdvertiserCampaignResponse,
@@ -13,7 +17,7 @@ import type {
 import type { PublishersResponse } from "~~/app/api/publishers/route";
 import { Stepper } from "~~/components/adflow/Stepper";
 import { Topbar } from "~~/components/adflow/Topbar";
-import { useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
+import { useDeployedContractInfo, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
 import type { AdvertiserCampaignSessionSummary, AdvertiserSessionSummary, Publisher } from "~~/types/adflow";
 import { getParsedError, notification } from "~~/utils/scaffold-eth";
 
@@ -61,9 +65,15 @@ function splitEvenInt(total: number, count: number): number[] {
 const NewAdvertiserCampaign: NextPage = () => {
   const router = useRouter();
   const { chain } = useAccount();
+  const publicClient = usePublicClient({ chainId: arcTestnet.id });
   const { switchChainAsync } = useSwitchChain();
+  const { data: dealFactory } = useDeployedContractInfo({
+    contractName: "DealFactory",
+    chainId: arcTestnet.id,
+  });
   const { writeContractAsync: writeDealFactoryAsync } = useScaffoldWriteContract({
     contractName: "DealFactory",
+    chainId: arcTestnet.id,
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [advertiser, setAdvertiser] = useState<AdvertiserSessionSummary | null>(null);
@@ -541,10 +551,77 @@ const NewAdvertiserCampaign: NextPage = () => {
                             functionName: "createDeal",
                             args: [BigInt(onchainPublisherId), dealBudget, BigInt(dealImpressions)],
                             value: dealBudget,
-                          });
+                          },
+                          {
+                            blockConfirmations: 1,
+                          },
+                        );
                           if (!txHash) {
                             setSubmitting(false);
                             return;
+                          }
+
+                          if (!dealFactory) {
+                            throw new Error("DealFactory metadata unavailable.");
+                          }
+
+                          if (!publicClient) {
+                            throw new Error("Arc public client unavailable.");
+                          }
+                          const receipt = await publicClient.waitForTransactionReceipt({
+                            hash: txHash,
+                            confirmations: 1,
+                          });
+
+                          const parsedLogs = parseEventLogs({
+                            abi: dealFactory.abi,
+                            eventName: "DealCreated",
+                            logs: receipt.logs,
+                            strict: false,
+                          });
+
+                          const matchedLog = parsedLogs.find(log => {
+                            return log.args.publisherId !== undefined && log.args.publisherId?.toString() === onchainPublisherId;
+                          });
+                          const dealId = matchedLog?.args.dealId?.toString();
+                          const escrowAddress = matchedLog?.args.escrow?.toLowerCase();
+
+                          if (!dealId || !escrowAddress) {
+                            throw new Error("On-chain deal creation did not return dealId/escrow address.");
+                          }
+
+                          const dealPayload: CreateAdvertiserCampaignDealRequest = {
+                            publisherId: selected.pub.id,
+                            onchainPublisherId,
+                            onchainDealId: dealId,
+                            escrowAddress,
+                            txHash,
+                            fundedAmountWei: dealBudget.toString(),
+                            maxImpressions: dealImpressions,
+                            status: "funded",
+                          };
+
+                          const dealRes = await fetch(
+                            `/api/advertisers/${advertiser.id}/campaigns/${created.id}/deals`,
+                            {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify(dealPayload),
+                            },
+                          );
+
+                          const dealData: CreateAdvertiserCampaignDealResponse | { error?: string } = await dealRes
+                            .json()
+                            .catch(() => ({}));
+                          if (!dealRes.ok) {
+                            const reason =
+                              typeof dealData === "object" &&
+                              dealData &&
+                              "error" in dealData &&
+                              typeof dealData.error === "string"
+                                ? dealData.error
+                                : "Failed to persist funded deal.";
+                            throw new Error(reason);
                           }
                         }
 

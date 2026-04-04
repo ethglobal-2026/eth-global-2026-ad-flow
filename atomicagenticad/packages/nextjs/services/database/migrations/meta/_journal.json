@@ -50,6 +50,13 @@
       "when": 1775350000000,
       "tag": "0006_onchain_registry_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1775360000000,
+      "tag": "0007_advertiser_campaign_deals",
+      "breakpoints": true
     }
   ]
 }
