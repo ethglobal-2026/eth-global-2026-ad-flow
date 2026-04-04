@@ -1,408 +1,268 @@
-# Blockchain Code Specification
+# Minimal Blockchain Specification
 
 ## Goal
 
-Define the smart-contract architecture for `atomicagenticad` as an onchain coordination layer for advertising campaigns executed by autonomous agents.
+Build a minimal onchain marketplace where:
 
-This document assumes the product needs to:
+- a publisher can create a listing from their EOA,
+- an advertiser must create a profile before interacting,
+- a dedicated escrow contract is deployed for each deal,
+- funds are released as impressions are confirmed,
+- Chainlink CRE confirms delivery,
+- ENS is used to register publisher identity and pricing metadata.
 
-- let advertisers fund campaigns onchain,
-- let agent operators enroll and participate,
-- track approved delivery and performance proofs,
-- release payments only when campaign rules are met,
-- keep the protocol modular so each contract has a clear responsibility.
+## Design Principles
 
-## Global Principles
+- Keep v1 small and composable.
+- Use EOAs directly instead of abstract agent/operator layers.
+- Deploy one escrow per deal instead of storing every deal in one large contract.
+- Keep impression verification offchain and only settle verified results onchain.
+- Use ENS for readable publisher identity.
 
-- Solidity version: `^0.8.24`
-- Use OpenZeppelin for `Ownable`, `AccessControl`, `Pausable`, `ReentrancyGuard`, and token-safe transfers.
-- Prefer pull payments over push payments when possible.
-- Store only critical business state onchain.
-- Put heavy analytics and raw impression/click data offchain, and only anchor validated results onchain.
-- Emit events for every business action needed by the frontend or indexer.
-
-## Roles
-
-- `ADMIN`: protocol configuration, emergency pause, allowlist management.
-- `ADVERTISER`: creates and funds campaigns.
-- `AGENT_OPERATOR`: registers an agent and accepts campaign work.
-- `VALIDATOR_ORACLE`: submits verified campaign delivery and conversion results.
-- `TREASURY`: receives protocol fees.
-
-## Step 1 - Build `AgentRegistry.sol`
+## Step 1 - `PublisherRegistry.sol`
 
 ### Purpose
 
-Register agent identities and define who is allowed to act inside the protocol.
+Let any publisher EOA create and manage a public publisher listing.
 
 ### Main responsibilities
 
-- Create an onchain profile for each agent.
-- Link an `agentId` to an operator wallet.
-- Track metadata URI for agent description, reputation snapshot, and capabilities.
-- Support activation, suspension, and reactivation.
+- Register one publisher profile per EOA.
+- Store the publisher ENS name.
+- Store the publisher asking price for impressions.
+- Let the publisher update their listing.
+- Let the protocol read publisher data before a deal is created.
 
-### Required storage
+### Suggested storage
 
-- `uint256 nextAgentId`
-- `mapping(uint256 => Agent)`
-- `mapping(address => uint256[]) agentIdsByOperator`
-- `mapping(address => bool) approvedOperators`
+- `uint256 nextPublisherId`
+- `mapping(uint256 => PublisherProfile) publishers`
+- `mapping(address => uint256) publisherIdByAccount`
 
-### `Agent` struct
+### `PublisherProfile` struct
 
 - `uint256 id`
-- `address operator`
+- `address publisher`
+- `string ensName`
+- `uint256 pricePerImpression`
 - `string metadataURI`
 - `bool active`
-- `uint64 createdAt`
-- `uint64 updatedAt`
 
 ### Core functions
 
-- `registerAgent(address operator, string calldata metadataURI)`
-- `updateAgentMetadata(uint256 agentId, string calldata metadataURI)`
-- `setAgentStatus(uint256 agentId, bool active)`
-- `setApprovedOperator(address operator, bool approved)`
-- `getAgent(uint256 agentId)`
+- `createPublisherListing(string calldata ensName, uint256 pricePerImpression, string calldata metadataURI)`
+- `updatePublisherListing(uint256 publisherId, string calldata ensName, uint256 pricePerImpression, string calldata metadataURI)`
+- `setPublisherStatus(uint256 publisherId, bool active)`
+- `getPublisher(uint256 publisherId)`
 
-### Events
+### Rules
 
-- `AgentRegistered`
-- `AgentUpdated`
-- `AgentStatusChanged`
-- `OperatorApprovalChanged`
+- The publisher is always `msg.sender`.
+- Listing creation is permissionless in v1.
+- One EOA can have only one publisher listing in v1.
+- Only the publisher can edit their own listing.
+- Admin moderation can still disable a listing if needed.
+- ENS name should be stored as data in v1; later it can be verified against ENS records onchain.
 
-### Security notes
-
-- Only the operator or admin can update metadata.
-- Only admin can approve or ban operators.
-- Reject duplicate ownership edge cases if one wallet should control only one primary agent.
-
-## Step 2 - Build `CampaignRegistry.sol`
+## Step 2 - `AdvertiserRegistry.sol`
 
 ### Purpose
 
-Create campaign records and define campaign rules independently from funds custody.
+Require advertisers to create a profile before starting a deal with a publisher.
 
 ### Main responsibilities
 
-- Let advertisers create ad campaigns.
-- Save campaign budget, targeting references, payout model, and timing.
-- Track campaign lifecycle: draft, funded, live, completed, cancelled.
-- Assign one or more approved agents to a campaign.
+- Register advertiser identity.
+- Store advertiser billing or business metadata.
+- Gate deal creation so only registered advertisers can open a new escrow.
 
-### Required storage
+### Suggested storage
 
-- `uint256 nextCampaignId`
-- `mapping(uint256 => Campaign)`
-- `mapping(uint256 => uint256[]) assignedAgents`
+- `uint256 nextAdvertiserId`
+- `mapping(uint256 => AdvertiserProfile) advertisers`
+- `mapping(address => uint256) advertiserIdByAccount`
 
-### `Campaign` struct
+### `AdvertiserProfile` struct
 
 - `uint256 id`
 - `address advertiser`
+- `string name`
+- `string metadataURI`
+- `bool active`
+
+### Core functions
+
+- `createAdvertiserProfile(string calldata name, string calldata metadataURI)`
+- `updateAdvertiserProfile(uint256 advertiserId, string calldata name, string calldata metadataURI)`
+- `setAdvertiserStatus(uint256 advertiserId, bool active)`
+- `getAdvertiser(uint256 advertiserId)`
+
+### Rules
+
+- The advertiser is always `msg.sender`.
+- A deal cannot be created unless the advertiser profile exists and is active.
+
+## Step 3 - `DealFactory.sol`
+
+### Purpose
+
+Create one escrow contract per advertiser-publisher deal.
+
+### Main responsibilities
+
+- Validate that the advertiser is registered.
+- Validate that the publisher listing exists and is active.
+- Deploy a fresh escrow contract for the new deal.
+- Record the deal address for indexing and frontend discovery.
+
+### Suggested storage
+
+- `uint256 nextDealId`
+- `mapping(uint256 => address) escrowByDealId`
+
+### Core functions
+
+- `createDeal(uint256 publisherId, uint256 totalBudget, uint256 maxImpressions)`
+- `getDealEscrow(uint256 dealId)`
+
+### Rules
+
+- `msg.sender` must be a registered advertiser.
+- The publisher address comes from `PublisherRegistry`.
+- The escrow is initialized with publisher price and deal terms at creation time.
+
+## Step 4 - `DealEscrow.sol`
+
+### Purpose
+
+Hold the advertiser’s funds and pay the publisher as impressions are confirmed.
+
+### Main responsibilities
+
+- Receive and lock deal funding.
+- Track total confirmed impressions.
+- Calculate how much the publisher has earned.
+- Release payments incrementally.
+- Refund unused funds when the deal ends.
+
+### Suggested storage
+
+- `address advertiser`
+- `address publisher`
 - `address paymentToken`
+- `uint256 pricePerImpression`
 - `uint256 totalBudget`
-- `uint256 reservedBudget`
-- `uint256 spentBudget`
-- `uint64 startTime`
-- `uint64 endTime`
-- `bytes32 campaignSpecHash`
-- `PricingModel pricingModel`
-- `CampaignStatus status`
-
-### Enums
-
-- `PricingModel`: `CPM`, `CPC`, `CPA`, `FIXED`
-- `CampaignStatus`: `DRAFT`, `FUNDED`, `LIVE`, `COMPLETED`, `CANCELLED`, `DISPUTED`
+- `uint256 maxImpressions`
+- `uint256 confirmedImpressions`
+- `uint256 totalPaid`
+- `bool closed`
 
 ### Core functions
 
-- `createCampaign(...)`
-- `updateCampaignSpec(uint256 campaignId, bytes32 campaignSpecHash)`
-- `assignAgent(uint256 campaignId, uint256 agentId)`
-- `removeAgent(uint256 campaignId, uint256 agentId)`
-- `activateCampaign(uint256 campaignId)`
-- `completeCampaign(uint256 campaignId)`
-- `cancelCampaign(uint256 campaignId)`
+- `fundDeal(uint256 amount)`
+- `recordConfirmedImpressions(uint256 additionalImpressions)`
+- `releasePayment()`
+- `closeDeal()`
+- `refundRemainingBudget()`
 
-### Events
+### Payment logic
 
-- `CampaignCreated`
-- `CampaignUpdated`
-- `CampaignAgentAssigned`
-- `CampaignAgentRemoved`
-- `CampaignStatusChanged`
+- Earned amount = `confirmedImpressions * pricePerImpression`
+- Claimable amount = `earned amount - totalPaid`
+- The escrow must never pay above the funded amount.
 
-### Security notes
+### Rules
 
-- Only the advertiser can modify a draft campaign.
-- A live campaign can only change through narrowly scoped admin or settlement actions.
-- `campaignSpecHash` should point to offchain JSON or IPFS content containing creative, targeting, KPI, and legal terms.
+- The advertiser funds the contract.
+- The publisher receives payments from the contract.
+- Impression confirmation should not come from arbitrary users.
 
-## Step 3 - Build `CampaignEscrow.sol`
+## Step 5 - Chainlink CRE Integration
 
 ### Purpose
 
-Hold campaign funds and release them according to approved settlement instructions.
+Use Chainlink CRE to confirm impression delivery and trigger payment release.
 
 ### Main responsibilities
 
-- Receive campaign deposits from advertisers.
-- Lock campaign budget.
-- Reserve protocol fees.
-- Release payouts to agents.
-- Return unused funds when a campaign ends or is cancelled.
+- Receive verified impression confirmation from Chainlink CRE.
+- Pass confirmed impression counts to the escrow.
+- Trigger or authorize payment release after confirmation.
 
-### Required storage
+### Integration shape
 
-- `address treasury`
-- `uint16 protocolFeeBps`
-- `mapping(uint256 => EscrowBalance) escrowByCampaign`
+- Chainlink CRE acts as the trusted confirmation layer.
+- Once impressions are confirmed, the escrow updates `confirmedImpressions`.
+- After that, the escrow can release the newly earned funds to the publisher.
 
-### `EscrowBalance` struct
+### Minimal contract approach
 
-- `uint256 deposited`
-- `uint256 allocated`
-- `uint256 paidOut`
-- `uint256 refunded`
-- `uint256 feesCollected`
+This can be implemented in one of two ways:
 
-### Core functions
+1. `DealEscrow` directly accepts updates from a Chainlink-authorized address.
+2. A separate `ImpressionOracle.sol` receives Chainlink CRE callbacks and forwards approved updates to `DealEscrow`.
 
-- `fundCampaign(uint256 campaignId, uint256 amount)`
-- `increaseCampaignBudget(uint256 campaignId, uint256 amount)`
-- `settleCampaignPayout(uint256 campaignId, address recipient, uint256 grossAmount)`
-- `refundAdvertiser(uint256 campaignId, uint256 amount)`
-- `closeEscrow(uint256 campaignId)`
-- `setProtocolFee(uint16 protocolFeeBps)`
-- `setTreasury(address treasury)`
+For v1, the second option is cleaner because it separates fund custody from delivery confirmation.
 
-### Events
-
-- `CampaignFunded`
-- `CampaignBudgetIncreased`
-- `CampaignPayoutSettled`
-- `CampaignRefunded`
-- `EscrowClosed`
-- `ProtocolFeeUpdated`
-
-### Security notes
-
-- Add `nonReentrant` to all token-transfer functions.
-- Support only allowlisted ERC-20 tokens in v1, unless native ETH payments are explicitly needed.
-- Settlement should only be callable by a trusted settlement contract or oracle role, not directly by arbitrary operators.
-
-## Step 4 - Build `ProofOfDeliveryOracle.sol`
+## Step 6 - ENS Support
 
 ### Purpose
 
-Anchor offchain verified campaign performance onchain.
+Attach readable publisher identity to the marketplace.
 
 ### Main responsibilities
 
-- Accept signed or role-gated proof submissions.
-- Record aggregated performance by campaign and agent.
-- Prevent duplicate settlement for the same reporting period.
-- Trigger payout eligibility.
-
-### Required storage
-
-- `mapping(bytes32 => bool) processedProofs`
-- `mapping(uint256 => mapping(uint256 => DeliveryTotals)) deliveryByCampaignAndAgent`
-
-### `DeliveryTotals` struct
-
-- `uint256 impressions`
-- `uint256 clicks`
-- `uint256 conversions`
-- `uint256 payoutEarned`
-- `uint64 lastUpdatedAt`
-
-### Core functions
-
-- `submitProof(uint256 campaignId, uint256 agentId, bytes32 proofHash, DeliveryPayload calldata payload)`
-- `batchSubmitProofs(...)`
-- `invalidateProof(bytes32 proofHash)`
-- `getDeliveryTotals(uint256 campaignId, uint256 agentId)`
-
-### Events
-
-- `ProofSubmitted`
-- `ProofInvalidated`
-- `DeliveryTotalsUpdated`
-
-### Security notes
-
-- Restrict submissions to `VALIDATOR_ORACLE` role in v1.
-- Include reporting window and nonce in each proof to stop replay attacks.
-- Keep raw proof files offchain; store only hash and normalized totals onchain.
-
-## Step 5 - Build `SettlementManager.sol`
-
-### Purpose
-
-Convert validated campaign results into final payout instructions.
-
-### Main responsibilities
-
-- Read campaign rules from `CampaignRegistry`.
-- Read verified totals from `ProofOfDeliveryOracle`.
-- Calculate what each agent is owed.
-- Call `CampaignEscrow` to release payments.
-- Mark campaign periods as settled.
-
-### Required storage
-
-- `mapping(uint256 => mapping(bytes32 => bool)) settledPeriods`
-
-### Core functions
-
-- `settleAgentPeriod(uint256 campaignId, uint256 agentId, bytes32 periodId)`
-- `settleCampaignBatch(uint256 campaignId, uint256[] calldata agentIds, bytes32 periodId)`
-- `previewPayout(uint256 campaignId, uint256 agentId, bytes32 periodId)`
-
-### Calculation rules
-
-- `CPM`: payout based on validated impressions per 1,000 units.
-- `CPC`: payout based on validated clicks.
-- `CPA`: payout based on validated conversions.
-- `FIXED`: payout based on milestone approval or campaign completion.
-
-### Events
-
-- `PeriodSettled`
-- `AgentPaid`
-
-### Security notes
-
-- Never allow settlement above the funded and available escrow balance.
-- A period must be settled exactly once.
-- Add pausable emergency stop.
-
-## Step 6 - Build `DisputeManager.sol`
-
-### Purpose
-
-Handle disagreements about delivery data, invalid traffic, or blocked payouts.
-
-### Main responsibilities
-
-- Open a dispute on a campaign or settlement period.
-- Freeze related payouts while the dispute is active.
-- Allow admin or arbitrator resolution.
-- Record the final outcome for auditability.
-
-### Required storage
-
-- `uint256 nextDisputeId`
-- `mapping(uint256 => Dispute)`
-
-### `Dispute` struct
-
-- `uint256 id`
-- `uint256 campaignId`
-- `uint256 agentId`
-- `bytes32 periodId`
-- `address openedBy`
-- `string evidenceURI`
-- `DisputeStatus status`
-- `uint64 openedAt`
-- `uint64 resolvedAt`
-
-### Enums
-
-- `DisputeStatus`: `OPEN`, `UNDER_REVIEW`, `RESOLVED_ADVERTISER`, `RESOLVED_AGENT`, `REJECTED`
-
-### Core functions
-
-- `openDispute(...)`
-- `updateDisputeStatus(uint256 disputeId, DisputeStatus status)`
-- `resolveDispute(uint256 disputeId, bool releaseFundsToAgent)`
-
-### Events
-
-- `DisputeOpened`
-- `DisputeStatusChanged`
-- `DisputeResolved`
-
-### Security notes
-
-- Only involved parties or admin can open a dispute.
-- Resolution should be role-protected.
-- Settlement contract must check dispute status before paying.
-
-## Step 7 - Build `ProtocolTreasury.sol`
-
-### Purpose
-
-Receive protocol fees and manage approved withdrawals.
-
-### Main responsibilities
-
-- Collect fees from escrow settlements.
-- Allow controlled withdrawals.
-- Optionally support revenue split across multiple treasury recipients.
-
-### Core functions
-
-- `withdraw(address token, address to, uint256 amount)`
-- `setFeeRecipient(address recipient, bool approved)`
-
-### Events
-
-- `TreasuryWithdrawal`
-- `FeeRecipientUpdated`
-
-### Security notes
-
-- Use multisig ownership in production.
-- Keep this contract intentionally simple.
-
-## Recommended Deployment Order
-
-1. Deploy `AgentRegistry.sol`
-2. Deploy `CampaignRegistry.sol`
-3. Deploy `ProtocolTreasury.sol`
-4. Deploy `CampaignEscrow.sol`
-5. Deploy `ProofOfDeliveryOracle.sol`
-6. Deploy `SettlementManager.sol`
-7. Deploy `DisputeManager.sol`
-8. Grant roles and wire contract addresses together
-
-## Contract Dependencies
-
-- `CampaignRegistry` depends on `AgentRegistry`
-- `CampaignEscrow` depends on `CampaignRegistry` and `ProtocolTreasury`
-- `ProofOfDeliveryOracle` depends on `CampaignRegistry` and `AgentRegistry`
-- `SettlementManager` depends on `CampaignRegistry`, `CampaignEscrow`, and `ProofOfDeliveryOracle`
-- `DisputeManager` depends on `CampaignRegistry` and `SettlementManager`
-
-## Minimum Test Plan
-
-- Campaign creation and funding
-- Agent assignment and removal
-- Oracle proof submission and replay protection
-- Correct payout calculation per pricing model
-- Partial settlement then final settlement
-- Refund flow after cancellation
-- Dispute opening and payout freeze
-- Pause and admin recovery flows
-- Unauthorized caller reverts
-
-## Suggested Next Solidity Deliverables
-
-1. Replace `YourContract.sol` with the first production contract: `AgentRegistry.sol`
-2. Create interface files for cross-contract calls
-3. Add Foundry tests for each contract before moving to the next step
-4. Add a deployment script that wires all roles and constructor dependencies
-
-## Open Product Questions
-
-- Which payment assets are allowed in v1: one stablecoin, multiple ERC-20s, or ETH?
-- Are agents paid individually, through teams, or through revenue-sharing splits?
-- Who acts as the oracle or validator in production?
-- Is dispute resolution centralized in v1 or DAO-governed later?
-- Does the product need NFT receipts, campaign badges, or agent reputation tokens?
-
+- Store the publisher ENS name in the publisher listing.
+- Expose publisher pricing alongside ENS identity.
+- Let the frontend display publisher name and domain in a human-readable format.
+
+### Minimal v1 approach
+
+- Save `ensName` in `PublisherRegistry`.
+- Save `pricePerImpression` in the same listing.
+- Treat ENS as declarative metadata first.
+
+### Future upgrade
+
+Later, the protocol can verify that:
+
+- the publisher controls the ENS name,
+- the ENS name resolves to the publisher EOA,
+- pricing or metadata can be anchored through ENS text records.
+
+## Minimal Contract Set
+
+1. `PublisherRegistry.sol`
+2. `AdvertiserRegistry.sol`
+3. `DealFactory.sol`
+4. `DealEscrow.sol`
+5. `ImpressionOracle.sol` or direct Chainlink CRE integration inside escrow
+
+## Recommended Build Order
+
+1. Build `PublisherRegistry.sol`
+2. Build `AdvertiserRegistry.sol`
+3. Build `DealEscrow.sol`
+4. Build `DealFactory.sol`
+5. Add Chainlink CRE confirmation flow
+6. Add ENS-facing reads and validation helpers
+
+## Core User Flow
+
+1. A publisher EOA creates a publisher listing with ENS name and price per impression.
+2. An advertiser EOA creates an advertiser profile.
+3. The advertiser selects a publisher and opens a deal.
+4. The factory deploys a new escrow contract for that deal.
+5. The advertiser funds the escrow.
+6. Impressions happen offchain.
+7. Chainlink CRE confirms impressions.
+8. The escrow releases the appropriate payment to the publisher.
+9. Any unused funds are returned to the advertiser when the deal closes.
+
+## Open Questions
+
+- Will v1 use ETH, a stablecoin, or both for deal funding?
+- Should payments be pushed automatically after confirmation or pulled by the publisher?
+- Should the publisher be allowed to update pricing after a deal exists, or should each deal snapshot the price permanently?
+- Will ENS be optional or mandatory for publisher listings?
+- Should Chainlink CRE update the escrow continuously or in reporting batches?
