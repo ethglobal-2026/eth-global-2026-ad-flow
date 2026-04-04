@@ -1,7 +1,7 @@
 # AdFlow — Hackathon MVP: Detailed Requirements & Work Plan
 
 **Team:** 4–5 balanced full-stack developers
-**Chain:** Arc (EVM / Solidity)
+**Chain:** Arc (EVM / Solidity) 
 **Agent stack:** Anthropic Claude (tool use)
 **Time constraint:** 36 hours
 **Date:** April 2026
