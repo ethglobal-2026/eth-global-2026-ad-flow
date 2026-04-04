@@ -6,8 +6,8 @@ import {DealEscrow} from "./DealEscrow.sol";
 import {PublisherRegistry} from "./PublisherRegistry.sol";
 
 contract DealFactory {
-    AdvertiserRegistry public immutable advertiserRegistry;
-    PublisherRegistry public immutable publisherRegistry;
+    AdvertiserRegistry public immutable ADVERTISER_REGISTRY;
+    PublisherRegistry public immutable PUBLISHER_REGISTRY;
 
     uint256 public nextDealId = 1;
 
@@ -36,8 +36,8 @@ contract DealFactory {
             revert InvalidRegistry();
         }
 
-        advertiserRegistry = AdvertiserRegistry(advertiserRegistry_);
-        publisherRegistry = PublisherRegistry(publisherRegistry_);
+        ADVERTISER_REGISTRY = AdvertiserRegistry(advertiserRegistry_);
+        PUBLISHER_REGISTRY = PublisherRegistry(publisherRegistry_);
     }
 
     function createDeal(
@@ -45,14 +45,14 @@ contract DealFactory {
         uint256 totalBudget,
         uint256 maxImpressions
     ) external returns (uint256 dealId, address escrow) {
-        if (!advertiserRegistry.isActiveAdvertiser(msg.sender)) revert AdvertiserNotActive(msg.sender);
+        if (!ADVERTISER_REGISTRY.isActiveAdvertiser(msg.sender)) revert AdvertiserNotActive(msg.sender);
         if (totalBudget == 0) revert InvalidBudget();
         if (maxImpressions == 0) revert InvalidMaxImpressions();
-        if (!publisherRegistry.isAvailablePublisher(publisherId)) revert PublisherNotAvailable(publisherId);
+        if (!PUBLISHER_REGISTRY.isAvailablePublisher(publisherId)) revert PublisherNotAvailable(publisherId);
 
-        PublisherRegistry.PublisherProfile memory publisherProfile = publisherRegistry.getPublisher(publisherId);
-        address publisher = publisherRegistry.getPublisherAccount(publisherId);
-        uint256 advertiserId = advertiserRegistry.advertiserIdByAccount(msg.sender);
+        PublisherRegistry.PublisherProfile memory publisherProfile = PUBLISHER_REGISTRY.getPublisher(publisherId);
+        address publisher = PUBLISHER_REGISTRY.getPublisherAccount(publisherId);
+        uint256 advertiserId = ADVERTISER_REGISTRY.advertiserIdByAccount(msg.sender);
 
         dealId = nextDealId++;
         escrow = address(
