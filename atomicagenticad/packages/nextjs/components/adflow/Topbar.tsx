@@ -78,7 +78,10 @@ export const Topbar = ({ variant, activeTab, onboardingLabel }: TopbarProps) => 
             <button
               className="btn btn-ghost btn-sm text-base-content/50"
               style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem" }}
-              onClick={() => handleLogOut()}
+              onClick={async () => {
+                await handleLogOut();
+                router.push("/");
+              }}
             >
               Log out
             </button>
@@ -90,7 +93,6 @@ export const Topbar = ({ variant, activeTab, onboardingLabel }: TopbarProps) => 
         <div className="flex items-center gap-2">
           <div className="flex gap-1 flex-wrap justify-end">
             {navLink("Dashboard", activeTab === "dashboard", () => router.push("/advertiser/dashboard"))}
-            {navLink("Discovery", activeTab === "discovery", () => router.push("/advertiser/discovery"))}
             {navLink("New campaign", activeTab === "new-campaign", () => router.push("/advertiser/campaign/new"))}
             {navLink("Settings", activeTab === "settings", () => router.push("/advertiser/settings"))}
             {navLink("Wallet", activeTab === "wallet", () => router.push("/advertiser/wallet"))}
@@ -100,7 +102,10 @@ export const Topbar = ({ variant, activeTab, onboardingLabel }: TopbarProps) => 
             <button
               className="btn btn-ghost btn-sm text-base-content/50"
               style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem" }}
-              onClick={() => handleLogOut()}
+              onClick={async () => {
+                await handleLogOut();
+                router.push("/");
+              }}
             >
               Log out
             </button>

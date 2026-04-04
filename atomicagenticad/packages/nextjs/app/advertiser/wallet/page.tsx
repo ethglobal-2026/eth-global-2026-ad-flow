@@ -72,7 +72,7 @@ const AdvertiserWallet: NextPage = () => {
                   {balance ? parseFloat(balance.formatted).toFixed(4) : "0.0000"}
                 </span>
                 <span className="text-xl text-base-content/40 font-normal ml-2">
-                  {balance?.symbol ?? "ETH"}
+                  USDC
                 </span>
               </>
             )}
@@ -131,7 +131,7 @@ const AdvertiserWallet: NextPage = () => {
                     {campaigns.map(c => (
                       <tr key={c.id}>
                         <td className="text-sm font-medium max-w-[160px] truncate">{c.productDescription}</td>
-                        <td className="text-warning font-semibold">-${c.budgetUsdc}</td>
+                        <td className="text-warning font-semibold">${c.budgetUsdc}</td>
                         <td className="text-sm text-base-content/50">{c.targetImpressions.toLocaleString()}</td>
                         <td className="text-sm text-base-content/50">
                           {new Date(c.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
