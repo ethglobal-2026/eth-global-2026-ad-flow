@@ -13,6 +13,16 @@ export type SiteAnalysis = {
 };
 
 export async function POST(request: NextRequest) {
+  try {
+    return await analyze(request);
+  } catch (err) {
+    console.error("[analyze-site]", err);
+    const message = err instanceof Anthropic.APIError ? err.message : "Internal server error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+async function analyze(request: NextRequest) {
   const { url } = await request.json();
 
   if (!url || typeof url !== "string") {
@@ -27,7 +37,6 @@ export async function POST(request: NextRequest) {
       signal: AbortSignal.timeout(5000),
     });
     const html = await res.text();
-    // Strip tags and collapse whitespace
     siteContent = html
       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
@@ -72,10 +81,14 @@ Return exactly this JSON shape:
     return NextResponse.json({ error: "No response from model" }, { status: 500 });
   }
 
+  // Strip markdown code fences in case the model wrapped the JSON
+  const json = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+
   try {
-    const analysis: SiteAnalysis = JSON.parse(text);
+    const analysis: SiteAnalysis = JSON.parse(json);
     return NextResponse.json(analysis);
   } catch {
+    console.error("[analyze-site] Failed to parse model response:", text);
     return NextResponse.json({ error: "Failed to parse analysis response" }, { status: 500 });
   }
 }
