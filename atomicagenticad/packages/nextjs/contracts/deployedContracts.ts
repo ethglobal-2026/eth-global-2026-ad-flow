@@ -7,7 +7,7 @@ import { GenericContractsDeclaration } from "~~/utils/scaffold-eth/contract";
 const deployedContracts = {
   5042002: {
     AdvertiserRegistry: {
-      address: "0x46a5cd333af83e4e66c9c9920e1166c78c91c6eb",
+      address: "0xf4a4b179d8c7bb4524e608daa9f37b4c35f628d7",
       abi: [
         {
           type: "constructor",
@@ -575,10 +575,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 35474136,
+      deployedOnBlock: 35487856,
     },
     PublisherRegistry: {
-      address: "0x500eaf28359cc8b88f3977ad36a98e94cdb48fed",
+      address: "0x0975fc538752734adf903d14f38b05fccbdc3589",
       abi: [
         {
           type: "constructor",
@@ -1262,10 +1262,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 35474136,
+      deployedOnBlock: 35487856,
     },
     DealFactory: {
-      address: "0x2216a7f755852a5c7a536bcdc7e568e41c766bbc",
+      address: "0xd0698ce97b7f0e9afc439779d70ed3e04e12502a",
       abi: [
         {
           type: "constructor",
@@ -1550,7 +1550,7 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 35474136,
+      deployedOnBlock: 35487856,
     },
   },
 } as const;

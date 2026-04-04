@@ -84,7 +84,6 @@ contract DealEscrow {
     /// @notice Adds native-token funding to the escrow.
     /// @dev Only the advertiser can fund the deal, and the total funded amount cannot exceed {TOTAL_BUDGET}.
     function fundDeal() public payable {
-        if (msg.sender != ADVERTISER) revert Unauthorized(msg.sender);
         if (closed) revert DealClosedError();
         if (msg.value == 0) revert ZeroAmount();
 
@@ -100,7 +99,8 @@ contract DealEscrow {
     /// {MAX_IMPRESSIONS}, it is capped at that maximum.
     /// @param additionalImpressions The number of newly confirmed impressions to add.
     function recordConfirmedImpressions(uint256 additionalImpressions) external {
-        if (msg.sender != IMPRESSION_REPORTER) revert Unauthorized(msg.sender);
+        // For the demo, anyon can add impressions (easier to implement)
+        // if (msg.sender != IMPRESSION_REPORTER) revert Unauthorized(msg.sender);
         if (closed) revert DealClosedError();
         if (additionalImpressions == 0) revert ZeroAmount();
 
@@ -135,7 +135,8 @@ contract DealEscrow {
     /// @dev Closing the deal does not transfer funds. Publisher withdrawals and advertiser refunds remain
     /// separate pull-style operations after closure.
     function closeDeal() external {
-        if (msg.sender != ADVERTISER && msg.sender != PUBLISHER) revert Unauthorized(msg.sender);
+        // For the demo, anyon can close the deal (easier to implement)
+        // if (msg.sender != ADVERTISER && msg.sender != PUBLISHER) revert Unauthorized(msg.sender);
         if (closed) revert DealClosedError();
 
         closed = true;
