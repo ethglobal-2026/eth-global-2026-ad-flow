@@ -40,6 +40,7 @@ contract PublisherRegistryTest is Test {
         assertEq(profile.pricePerImpression, 10);
         assertEq(profile.metadataURI, "ipfs://publisher-1");
         assertTrue(profile.active);
+        assertTrue(profile.available);
         assertEq(profile.createdAt, block.timestamp);
         assertEq(profile.updatedAt, block.timestamp);
         assertEq(publisherRegistry.getPublisherAccount(publisherId), publisher);
@@ -73,6 +74,38 @@ contract PublisherRegistryTest is Test {
         PublisherRegistry.PublisherProfile memory profile = publisherRegistry.getPublisher(publisherId);
         assertFalse(profile.active);
         assertEq(profile.updatedAt, block.timestamp);
+    }
+
+    function testPublisherCanUpdateAvailability() public {
+        vm.prank(publisher);
+        uint256 publisherId = publisherRegistry.createPublisherListing("publisher.eth", 10, "ipfs://publisher-1");
+
+        vm.warp(block.timestamp + 1);
+        vm.prank(publisher);
+        publisherRegistry.setPublisherAvailability(publisherId, false);
+
+        PublisherRegistry.PublisherProfile memory profile = publisherRegistry.getPublisher(publisherId);
+        assertFalse(profile.available);
+        assertEq(profile.updatedAt, block.timestamp);
+    }
+
+    function testIsAvailablePublisherRequiresActiveAndAvailableListing() public {
+        vm.prank(publisher);
+        uint256 publisherId = publisherRegistry.createPublisherListing("publisher.eth", 10, "ipfs://publisher-1");
+
+        assertTrue(publisherRegistry.isAvailablePublisher(publisherId));
+
+        vm.prank(publisher);
+        publisherRegistry.setPublisherAvailability(publisherId, false);
+        assertFalse(publisherRegistry.isAvailablePublisher(publisherId));
+
+        vm.prank(publisher);
+        publisherRegistry.setPublisherAvailability(publisherId, true);
+        assertTrue(publisherRegistry.isAvailablePublisher(publisherId));
+
+        vm.prank(admin);
+        publisherRegistry.setPublisherStatus(publisherId, false);
+        assertFalse(publisherRegistry.isAvailablePublisher(publisherId));
     }
 
     function testUnauthorizedUserCannotManagePublisherListing() public {

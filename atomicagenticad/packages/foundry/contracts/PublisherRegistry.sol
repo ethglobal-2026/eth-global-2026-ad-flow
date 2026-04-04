@@ -12,6 +12,7 @@ contract PublisherRegistry is AccessControl {
         uint256 pricePerImpression;
         string metadataURI;
         bool active;
+        bool available;
         uint64 createdAt;
         uint64 updatedAt;
     }
@@ -37,6 +38,7 @@ contract PublisherRegistry is AccessControl {
         string metadataURI
     );
     event PublisherStatusChanged(uint256 indexed publisherId, bool active);
+    event PublisherAvailabilityChanged(uint256 indexed publisherId, bool available);
 
     error PublisherNotFound(uint256 publisherId);
     error NotPublisherAccountOrAdmin(uint256 publisherId, address caller);
@@ -70,6 +72,7 @@ contract PublisherRegistry is AccessControl {
             pricePerImpression: pricePerImpression,
             metadataURI: metadataURI,
             active: true,
+            available: true,
             createdAt: timestamp,
             updatedAt: timestamp
         });
@@ -115,6 +118,18 @@ contract PublisherRegistry is AccessControl {
         emit PublisherStatusChanged(publisherId, active);
     }
 
+    function setPublisherAvailability(uint256 publisherId, bool available) external {
+        PublisherProfile storage publisher = _getExistingPublisher(publisherId);
+
+        // TODO: Should be done by the deal making contract
+        if (!_canManagePublisher(publisherId)) revert NotPublisherAccountOrAdmin(publisherId, msg.sender);
+
+        publisher.available = available;
+        publisher.updatedAt = uint64(block.timestamp);
+
+        emit PublisherAvailabilityChanged(publisherId, available);
+    }
+
     function getPublisher(uint256 publisherId) external view returns (PublisherProfile memory) {
         return _getExistingPublisher(publisherId);
     }
@@ -122,6 +137,11 @@ contract PublisherRegistry is AccessControl {
     function getPublisherAccount(uint256 publisherId) external view returns (address) {
         _getExistingPublisher(publisherId);
         return publisherAccounts[publisherId];
+    }
+
+    function isAvailablePublisher(uint256 publisherId) external view returns (bool) {
+        PublisherProfile storage publisher = _getExistingPublisher(publisherId);
+        return publisher.active && publisher.available;
     }
 
     function _canManagePublisher(uint256 publisherId) internal view returns (bool) {

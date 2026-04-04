@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import "./DeployHelpers.s.sol";
+import {DeployAdvertiserRegistry} from "./DeployAdvertiserRegistry.s.sol";
 import {DeployPublisherRegistry} from "./DeployPublisherRegistry.s.sol";
 
 /**
@@ -12,6 +13,9 @@ import {DeployPublisherRegistry} from "./DeployPublisherRegistry.s.sol";
  */
 contract DeployScript is ScaffoldETHDeploy {
     function run() external {
+        DeployAdvertiserRegistry deployAdvertiserRegistry = new DeployAdvertiserRegistry();
+        deployAdvertiserRegistry.run();
+
         DeployPublisherRegistry deployPublisherRegistry = new DeployPublisherRegistry();
         deployPublisherRegistry.run();
     }

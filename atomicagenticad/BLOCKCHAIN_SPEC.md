@@ -30,6 +30,7 @@ Let any publisher EOA create and manage a public publisher listing.
 - Register one publisher profile per EOA.
 - Store the publisher ENS name.
 - Store the publisher asking price for impressions.
+- Store whether the publisher is currently available to accept new deals.
 - Let the publisher update their listing.
 - Let the protocol read publisher data before a deal is created.
 
@@ -47,12 +48,14 @@ Let any publisher EOA create and manage a public publisher listing.
 - `uint256 pricePerImpression`
 - `string metadataURI`
 - `bool active`
+- `bool available`
 
 ### Core functions
 
 - `createPublisherListing(string calldata ensName, uint256 pricePerImpression, string calldata metadataURI)`
 - `updatePublisherListing(uint256 publisherId, string calldata ensName, uint256 pricePerImpression, string calldata metadataURI)`
 - `setPublisherStatus(uint256 publisherId, bool active)`
+- `setPublisherAvailability(uint256 publisherId, bool available)`
 - `getPublisher(uint256 publisherId)`
 
 ### Rules
@@ -62,6 +65,8 @@ Let any publisher EOA create and manage a public publisher listing.
 - One EOA can have only one publisher listing in v1.
 - Only the publisher can edit their own listing.
 - Admin moderation can still disable a listing if needed.
+- A deal can only be created if the publisher listing is both `active` and `available`.
+- `active` is for moderation and protocol-level enablement; `available` is for marketplace readiness.
 - ENS name should be stored as data in v1; later it can be verified against ENS records onchain.
 
 ## Step 2 - `AdvertiserRegistry.sol`
@@ -111,7 +116,7 @@ Create one escrow contract per advertiser-publisher deal.
 ### Main responsibilities
 
 - Validate that the advertiser is registered.
-- Validate that the publisher listing exists and is active.
+- Validate that the publisher listing exists, is active, and is available.
 - Deploy a fresh escrow contract for the new deal.
 - Record the deal address for indexing and frontend discovery.
 
@@ -129,6 +134,7 @@ Create one escrow contract per advertiser-publisher deal.
 
 - `msg.sender` must be a registered advertiser.
 - The publisher address comes from `PublisherRegistry`.
+- The selected publisher must be active and available for new deals.
 - The escrow is initialized with publisher price and deal terms at creation time.
 
 ## Step 4 - `DealEscrow.sol`
