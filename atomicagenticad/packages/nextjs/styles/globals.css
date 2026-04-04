@@ -13,7 +13,8 @@
   themes:
     light,
     dark --prefersdark,
-    adflow;
+    adflow,
+    tripleaaa;
 }
 
 @plugin "daisyui/theme" {
@@ -103,6 +104,44 @@
   --color-warning-content: #0f1729;
 
   --color-error: #ff4757;
+  --color-error-content: #ffffff;
+
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+}
+
+@plugin "daisyui/theme" {
+  name: "tripleaaa";
+
+  /* Backgrounds: white cards on a very light blue page */
+  --color-base-100: #ffffff;
+  --color-base-200: #eff6ff;
+  --color-base-300: #dbeafe;
+  --color-base-content: #0f172a;
+
+  /* Royal blue primary — matches DePINed CTA */
+  --color-primary: #2563eb;
+  --color-primary-content: #ffffff;
+
+  --color-secondary: #64748b;
+  --color-secondary-content: #ffffff;
+
+  --color-accent: #3b82f6;
+  --color-accent-content: #ffffff;
+
+  --color-neutral: #1e293b;
+  --color-neutral-content: #ffffff;
+
+  --color-info: #0ea5e9;
+  --color-info-content: #ffffff;
+
+  --color-success: #10b981;
+  --color-success-content: #ffffff;
+
+  --color-warning: #f59e0b;
+  --color-warning-content: #ffffff;
+
+  --color-error: #ef4444;
   --color-error-content: #ffffff;
 
   --radius-field: 0.5rem;

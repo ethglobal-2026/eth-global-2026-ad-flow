@@ -4,13 +4,13 @@ import "~~/styles/globals.css";
 import { getMetadata } from "~~/utils/scaffold-eth/getMetadata";
 
 export const metadata = getMetadata({
-  title: "AdFlow",
-  description: "Agent-powered ad marketplace for the open web",
+  title: "Triple A — Atomic Agentic Ads",
+  description: "Agent-powered ad marketplace for the open web. AI discovery, blockchain payments, no gatekeepers.",
 });
 
 const RootLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <html suppressHydrationWarning data-theme="adflow">
+    <html suppressHydrationWarning data-theme="tripleaaa">
       <body>
         <ScaffoldEthAppWithProviders>{children}</ScaffoldEthAppWithProviders>
       </body>
