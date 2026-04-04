@@ -9,6 +9,7 @@ export type PublisherDashboardCampaign = {
   advertiserName: string;
   impressionsTotal: number;
   budgetUsdc: string;
+  fundedAmountWei: string | null;
   escrowAddress: string | null;
   status: string;
 };
@@ -45,6 +46,7 @@ export async function GET(_request: Request, context: RouteContext) {
       advertiserName: r.advertiserName,
       impressionsTotal: r.targetImpressions,
       budgetUsdc: r.budgetUsdc,
+      fundedAmountWei: r.fundedAmountWei,
       escrowAddress: r.escrowAddress,
       status: r.escrowAddress ? "active" : "pending",
     }));

@@ -14,11 +14,8 @@ import { DEAL_ESCROW_READ_ABI } from "~~/utils/adflow/dealEscrowAbi";
 import { notification } from "~~/utils/scaffold-eth";
 
 type OnchainSnapshot = {
-  fundedAmount: bigint;
   confirmedImpressions: bigint;
   totalPaid: bigint;
-  maxImpressions: bigint;
-  pricePerImpression: bigint;
   closed: boolean;
 };
 
@@ -70,48 +67,26 @@ const CampaignDashboard: NextPage = () => {
           return;
         }
 
-        const [fundedAmount, confirmedImpressions, totalPaid, maxImpressions, pricePerImpression, closed] =
-          await Promise.all([
-            publicClient.readContract({
-              address: payload.campaign.escrowAddress as `0x${string}`,
-              abi: DEAL_ESCROW_READ_ABI,
-              functionName: "fundedAmount",
-            }),
-            publicClient.readContract({
-              address: payload.campaign.escrowAddress as `0x${string}`,
-              abi: DEAL_ESCROW_READ_ABI,
-              functionName: "confirmedImpressions",
-            }),
-            publicClient.readContract({
-              address: payload.campaign.escrowAddress as `0x${string}`,
-              abi: DEAL_ESCROW_READ_ABI,
-              functionName: "totalPaid",
-            }),
-            publicClient.readContract({
-              address: payload.campaign.escrowAddress as `0x${string}`,
-              abi: DEAL_ESCROW_READ_ABI,
-              functionName: "MAX_IMPRESSIONS",
-            }),
-            publicClient.readContract({
-              address: payload.campaign.escrowAddress as `0x${string}`,
-              abi: DEAL_ESCROW_READ_ABI,
-              functionName: "PRICE_PER_IMPRESSION",
-            }),
-            publicClient.readContract({
-              address: payload.campaign.escrowAddress as `0x${string}`,
-              abi: DEAL_ESCROW_READ_ABI,
-              functionName: "closed",
-            }),
-          ]);
+        // Only dynamic values come from the contract
+        const [confirmedImpressions, totalPaid, closed] = await Promise.all([
+          publicClient.readContract({
+            address: payload.campaign.escrowAddress as `0x${string}`,
+            abi: DEAL_ESCROW_READ_ABI,
+            functionName: "confirmedImpressions",
+          }),
+          publicClient.readContract({
+            address: payload.campaign.escrowAddress as `0x${string}`,
+            abi: DEAL_ESCROW_READ_ABI,
+            functionName: "totalPaid",
+          }),
+          publicClient.readContract({
+            address: payload.campaign.escrowAddress as `0x${string}`,
+            abi: DEAL_ESCROW_READ_ABI,
+            functionName: "closed",
+          }),
+        ]);
 
-        setOnchain({
-          fundedAmount,
-          confirmedImpressions,
-          totalPaid,
-          maxImpressions,
-          pricePerImpression,
-          closed,
-        });
+        setOnchain({ confirmedImpressions, totalPaid, closed });
       } catch {
         notification.error("Network error loading campaign.");
       } finally {
@@ -123,15 +98,24 @@ const CampaignDashboard: NextPage = () => {
   }, [advertiser?.id, campaignId, publicClient]);
 
   const numbers = useMemo(() => {
-    const funded = onchain ? Number.parseFloat(formatUnits(onchain.fundedAmount, 18)) : null;
+    // Static values from DB
+    const fundedAmountWei = detail?.campaign.fundedAmountWei ? BigInt(detail.campaign.fundedAmountWei) : null;
+    const maxImp = detail?.campaign.targetImpressions ?? null;
+    const pricePerImpressionWei =
+      fundedAmountWei != null && maxImp ? fundedAmountWei / BigInt(maxImp) : null;
+
+    const funded = fundedAmountWei != null ? Number.parseFloat(formatUnits(fundedAmountWei, 18)) : null;
+    const cpm = pricePerImpressionWei != null ? Number.parseFloat(formatUnits(pricePerImpressionWei * 1000n, 18)) : null;
+
+    // Dynamic values from contract
     const paid = onchain ? Number.parseFloat(formatUnits(onchain.totalPaid, 18)) : null;
-    const remaining = funded != null && paid != null ? Math.max(funded - paid, 0) : null;
     const confirmed = onchain ? Number(onchain.confirmedImpressions) : null;
-    const maxImp = onchain ? Number(onchain.maxImpressions) : detail?.campaign.targetImpressions ?? null;
+
+    const remaining = funded != null && paid != null ? Math.max(funded - paid, 0) : null;
     const pct = confirmed != null && maxImp && maxImp > 0 ? Math.min((confirmed / maxImp) * 100, 100) : 0;
-    const cpm = onchain ? Number.parseFloat(formatUnits(onchain.pricePerImpression * 1000n, 18)) : null;
+
     return { funded, paid, remaining, confirmed, maxImp, pct, cpm };
-  }, [detail?.campaign.targetImpressions, onchain]);
+  }, [detail?.campaign.fundedAmountWei, detail?.campaign.targetImpressions, onchain]);
 
   return (
     <div className="min-h-screen bg-base-200">

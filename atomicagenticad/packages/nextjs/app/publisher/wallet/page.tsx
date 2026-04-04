@@ -70,7 +70,7 @@ const PublisherWallet: NextPage = () => {
   const refreshEscrows = async () => {
     if (!dashboard || !publicClient) return;
 
-    const funded = dashboard.campaigns.filter(c => c.escrowAddress);
+    const funded = dashboard.campaigns.filter(c => c.escrowAddress && c.fundedAmountWei);
     if (funded.length === 0) return;
 
     setEscrowsLoading(true);
@@ -78,11 +78,16 @@ const PublisherWallet: NextPage = () => {
       const snapshots = await Promise.all(
         funded.map(async c => {
           const addr = c.escrowAddress as `0x${string}`;
-          const [fundedAmount, confirmedImpressions, totalPaid, pricePerImpression] = await Promise.all([
-            publicClient.readContract({ address: addr, abi: DEAL_ESCROW_READ_ABI, functionName: "fundedAmount" }),
+
+          // Static values come from DB — no contract read needed
+          const fundedAmount = BigInt(c.fundedAmountWei!);
+          const pricePerImpression =
+            c.impressionsTotal > 0 ? fundedAmount / BigInt(c.impressionsTotal) : 0n;
+
+          // Dynamic values — must read from contract
+          const [confirmedImpressions, totalPaid] = await Promise.all([
             publicClient.readContract({ address: addr, abi: DEAL_ESCROW_READ_ABI, functionName: "confirmedImpressions" }),
             publicClient.readContract({ address: addr, abi: DEAL_ESCROW_READ_ABI, functionName: "totalPaid" }),
-            publicClient.readContract({ address: addr, abi: DEAL_ESCROW_READ_ABI, functionName: "PRICE_PER_IMPRESSION" }),
           ]);
 
           const earned = confirmedImpressions * pricePerImpression;
