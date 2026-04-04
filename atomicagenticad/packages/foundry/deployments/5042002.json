@@ -1,6 +1,6 @@
 {
-  "0x582729A22F03127a2F78d56f9785AE5473366D79": "AdvertiserRegistry",
-  "0x5f40eC94926D96B109Fc935627DC66344844E5e9": "PublisherRegistry",
-  "0x9E85df27a97A2aDa8e9ACbC91b9bb147E106c665": "DealFactory",
+  "0x2216a7F755852A5c7A536BCdC7E568e41c766Bbc": "DealFactory",
+  "0x46A5cd333Af83e4e66c9C9920E1166C78c91c6Eb": "AdvertiserRegistry",
+  "0x500eAF28359cC8B88F3977AD36a98E94CDB48fEd": "PublisherRegistry",
   "networkName": "arc"
 }
