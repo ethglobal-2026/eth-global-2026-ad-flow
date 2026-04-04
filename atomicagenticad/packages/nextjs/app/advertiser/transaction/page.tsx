@@ -61,7 +61,7 @@ const Transaction: NextPage = () => {
 
   return (
     <div className="min-h-screen bg-base-200">
-      <Topbar variant="advertiser" activeTab="order" />
+      <Topbar variant="advertiser" />
       <div className="max-w-lg mx-auto px-6 py-12">
         {!checkout && !success && (
           <div className="card bg-base-100 border border-base-300">
