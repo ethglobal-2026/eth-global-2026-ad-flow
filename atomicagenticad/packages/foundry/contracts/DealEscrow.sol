@@ -56,7 +56,7 @@ contract DealEscrow {
         uint256 pricePerImpression_,
         uint256 totalBudget_,
         uint256 maxImpressions_
-    ) {
+    ) payable {
         if (impressionReporter_ == address(0)) revert InvalidImpressionReporter();
 
         ADVERTISER = advertiser_;
@@ -67,6 +67,12 @@ contract DealEscrow {
         PRICE_PER_IMPRESSION = pricePerImpression_;
         TOTAL_BUDGET = totalBudget_;
         MAX_IMPRESSIONS = maxImpressions_;
+
+        if (msg.value > totalBudget_) revert FundingExceedsBudget(msg.value, totalBudget_);
+        if (msg.value > 0) {
+            fundedAmount = msg.value;
+            emit DealFunded(advertiser_, msg.value, msg.value);
+        }
     }
 
     /// @notice Accepts direct native-token transfers and treats them as deal funding.

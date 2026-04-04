@@ -32,6 +32,7 @@ contract DealFactoryTest is Test {
 
         vm.prank(advertiser);
         advertiserId = advertiserRegistry.createAdvertiserProfile("Acme Ads", "ipfs://advertiser-1");
+        vm.deal(advertiser, 10 ether);
 
         vm.prank(publisher);
         publisherId = publisherRegistry.createPublisherListing("publisher.eth", 10, "ipfs://publisher-1");
@@ -57,6 +58,21 @@ contract DealFactoryTest is Test {
         assertEq(escrow.TOTAL_BUDGET(), 1_000);
         assertEq(escrow.MAX_IMPRESSIONS(), 100);
         assertFalse(publisherRegistry.isAvailablePublisher(publisherId));
+    }
+
+    function testCreateDealCanFundEscrowInSameTransaction() public {
+        vm.prank(advertiser);
+        (, address escrowAddress) = dealFactory.createDeal{value: 600}(publisherId, 1_000, 100);
+
+        DealEscrow escrow = DealEscrow(payable(escrowAddress));
+        assertEq(escrow.fundedAmount(), 600);
+        assertEq(address(escrow).balance, 600);
+    }
+
+    function testCreateDealRevertsWhenInitialFundingExceedsBudget() public {
+        vm.prank(advertiser);
+        vm.expectRevert(abi.encodeWithSelector(DealEscrow.FundingExceedsBudget.selector, 1_001, 1_000));
+        dealFactory.createDeal{value: 1_001}(publisherId, 1_000, 100);
     }
 
     function testClosingDealMakesPublisherAvailableAgain() public {

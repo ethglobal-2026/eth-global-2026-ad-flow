@@ -48,7 +48,7 @@ contract DealFactory {
         uint256 publisherId,
         uint256 totalBudget,
         uint256 maxImpressions
-    ) external returns (uint256 dealId, address escrow) {
+    ) external payable returns (uint256 dealId, address escrow) {
         if (!ADVERTISER_REGISTRY.isActiveAdvertiser(msg.sender)) revert AdvertiserNotActive(msg.sender);
         if (totalBudget == 0) revert InvalidBudget();
         if (maxImpressions == 0) revert InvalidMaxImpressions();
@@ -60,7 +60,7 @@ contract DealFactory {
 
         dealId = nextDealId++;
         escrow = address(
-            new DealEscrow(
+            new DealEscrow{value: msg.value}(
                 msg.sender,
                 publisher,
                 AUTHORIZED_REPORTER,
