@@ -5,6 +5,7 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
 contract PublisherRegistry is AccessControl {
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant DEAL_MANAGER_ROLE = keccak256("DEAL_MANAGER_ROLE");
 
     struct PublisherProfile {
         uint256 id;
@@ -45,6 +46,7 @@ contract PublisherRegistry is AccessControl {
     error InvalidAccount();
     error AccountAlreadyRegistered(address account, uint256 publisherId);
     error InvalidPricePerImpression();
+    error NotDealManager(address caller);
 
     constructor(address admin) {
         if (admin == address(0)) revert InvalidAccount();
@@ -121,8 +123,18 @@ contract PublisherRegistry is AccessControl {
     function setPublisherAvailability(uint256 publisherId, bool available) external {
         PublisherProfile storage publisher = _getExistingPublisher(publisherId);
 
-        // TODO: Should be done by the deal making contract
         if (!_canManagePublisher(publisherId)) revert NotPublisherAccountOrAdmin(publisherId, msg.sender);
+
+        publisher.available = available;
+        publisher.updatedAt = uint64(block.timestamp);
+
+        emit PublisherAvailabilityChanged(publisherId, available);
+    }
+
+    function setPublisherAvailabilityForDeal(uint256 publisherId, bool available) external {
+        PublisherProfile storage publisher = _getExistingPublisher(publisherId);
+
+        if (!hasRole(DEAL_MANAGER_ROLE, msg.sender)) revert NotDealManager(msg.sender);
 
         publisher.available = available;
         publisher.updatedAt = uint64(block.timestamp);

@@ -17,6 +17,7 @@ contract DeployScript is ScaffoldETHDeploy {
         AdvertiserRegistry advertiserRegistry = new AdvertiserRegistry(deployer);
         PublisherRegistry publisherRegistry = new PublisherRegistry(deployer);
         DealFactory dealFactory = new DealFactory(address(advertiserRegistry), address(publisherRegistry));
+        publisherRegistry.grantRole(publisherRegistry.DEAL_MANAGER_ROLE(), address(dealFactory));
 
         deployments.push(Deployment({name: "AdvertiserRegistry", addr: address(advertiserRegistry)}));
         deployments.push(Deployment({name: "PublisherRegistry", addr: address(publisherRegistry)}));

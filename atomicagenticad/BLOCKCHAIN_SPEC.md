@@ -8,7 +8,7 @@ Build a minimal onchain marketplace where:
 - an advertiser must create a profile before interacting,
 - a dedicated escrow contract is deployed for each deal,
 - funds are released as impressions are confirmed,
-- Chainlink CRE confirms delivery,
+- a permissioned delivery reporter confirms delivery,
 - ENS is used to register publisher identity and pricing metadata.
 
 ## Design Principles
@@ -136,6 +136,7 @@ Create one escrow contract per advertiser-publisher deal.
 - `msg.sender` must be a registered advertiser.
 - The publisher address comes from `PublisherRegistry`.
 - The selected publisher must be active and available for new deals.
+- The escrow's permissioned reporter is the same address that deployed the factory in the demo flow.
 - The escrow is initialized with publisher price and deal terms at creation time.
 - Deal funding and payouts use the native token of the chain.
 
@@ -187,35 +188,30 @@ Hold the advertiser’s funds and pay the publisher as impressions are confirmed
 - The advertiser funds the contract.
 - The publisher pulls payments from the contract.
 - In v1, funding and payout use the native token instead of an ERC-20.
-- In v1, impression confirmations are recorded by the advertiser until Chainlink CRE is wired in.
+- In v1, impression confirmations are recorded by a permissioned reporting address.
 - Impression confirmation should not come from arbitrary users.
 
-## Step 5 - Chainlink CRE Integration
+## Step 5 - Permissioned Impression Reporting
 
 ### Purpose
 
-Use Chainlink CRE to confirm impression delivery and trigger payment release.
+Use the deployer-controlled permissioned reporting address to confirm impression delivery and trigger payment release directly on each escrow.
 
 ### Main responsibilities
 
-- Receive verified impression confirmation from Chainlink CRE.
-- Pass confirmed impression counts to the escrow.
+- Receive verified impression confirmation from a trusted reporting service.
+- Pass confirmed impression counts directly to the escrow.
 - Trigger or authorize payment release after confirmation.
 
 ### Integration shape
 
-- Chainlink CRE acts as the trusted confirmation layer.
+- A permissioned address acts as the trusted confirmation layer.
 - Once impressions are confirmed, the escrow updates `confirmedImpressions`.
 - After that, the escrow can release the newly earned funds to the publisher.
 
 ### Minimal contract approach
 
-This can be implemented in one of two ways:
-
-1. `DealEscrow` directly accepts updates from a Chainlink-authorized address.
-2. A separate `ImpressionOracle.sol` receives Chainlink CRE callbacks and forwards approved updates to `DealEscrow`.
-
-For v1, the second option is cleaner because it separates fund custody from delivery confirmation.
+For v1, `DealEscrow` directly accepts updates from a permissioned address.
 
 ## Step 6 - ENS Support
 
@@ -249,7 +245,6 @@ Later, the protocol can verify that:
 2. `AdvertiserRegistry.sol`
 3. `DealFactory.sol`
 4. `DealEscrow.sol`
-5. `ImpressionOracle.sol` or direct Chainlink CRE integration inside escrow
 
 ## Recommended Build Order
 
@@ -257,7 +252,7 @@ Later, the protocol can verify that:
 2. Build `AdvertiserRegistry.sol`
 3. Build `DealEscrow.sol`
 4. Build `DealFactory.sol`
-5. Add Chainlink CRE confirmation flow
+5. Add permissioned impression confirmation flow
 6. Add ENS-facing reads and validation helpers
 
 ## Core User Flow
@@ -268,7 +263,7 @@ Later, the protocol can verify that:
 4. The factory deploys a new escrow contract for that deal.
 5. The advertiser funds the escrow.
 6. Impressions happen offchain.
-7. Chainlink CRE confirms impressions.
+7. A permissioned reporting service confirms impressions.
 8. The escrow releases the appropriate payment to the publisher.
 9. Any unused funds are returned to the advertiser when the deal closes.
 
@@ -278,4 +273,4 @@ Later, the protocol can verify that:
 - Should payments be pushed automatically after confirmation or pulled by the publisher?
 - Should the publisher be allowed to update pricing after a deal exists, or should each deal snapshot the price permanently?
 - Will ENS be optional or mandatory for publisher listings?
-- Should Chainlink CRE update the escrow continuously or in reporting batches?
+- Should the permissioned reporter update the escrow continuously or in reporting batches?

@@ -10,6 +10,7 @@ contract DealEscrowTest is Test {
     address internal advertiser = vm.addr(1);
     address internal publisher = vm.addr(2);
     address internal outsider = vm.addr(3);
+    address internal impressionReporter = vm.addr(4);
 
     uint256 internal constant PRICE_PER_IMPRESSION = 10;
     uint256 internal constant TOTAL_BUDGET = 1 ether;
@@ -19,6 +20,9 @@ contract DealEscrowTest is Test {
         dealEscrow = new DealEscrow(
             advertiser,
             publisher,
+            impressionReporter,
+            address(0),
+            0,
             PRICE_PER_IMPRESSION,
             TOTAL_BUDGET,
             MAX_IMPRESSIONS
@@ -50,21 +54,21 @@ contract DealEscrowTest is Test {
         dealEscrow.fundDeal{value: TOTAL_BUDGET + 1}();
     }
 
-    function testAdvertiserCanRecordConfirmedImpressions() public {
-        vm.prank(advertiser);
+    function testImpressionReporterCanRecordConfirmedImpressions() public {
+        vm.prank(impressionReporter);
         dealEscrow.recordConfirmedImpressions(100);
 
         assertEq(dealEscrow.confirmedImpressions(), 100);
     }
 
-    function testOnlyAdvertiserCanRecordImpressions() public {
+    function testOnlyImpressionReporterCanRecordImpressions() public {
         vm.prank(outsider);
         vm.expectRevert(abi.encodeWithSelector(DealEscrow.Unauthorized.selector, outsider));
         dealEscrow.recordConfirmedImpressions(100);
     }
 
     function testRecordingCapsAtMaxImpressions() public {
-        vm.prank(advertiser);
+        vm.prank(impressionReporter);
         dealEscrow.recordConfirmedImpressions(MAX_IMPRESSIONS + 1);
 
         assertEq(dealEscrow.confirmedImpressions(), MAX_IMPRESSIONS);
@@ -74,7 +78,7 @@ contract DealEscrowTest is Test {
         vm.prank(advertiser);
         dealEscrow.fundDeal{value: 0.5 ether}();
 
-        vm.prank(advertiser);
+        vm.prank(impressionReporter);
         dealEscrow.recordConfirmedImpressions(100);
 
         uint256 publisherBalanceBefore = publisher.balance;
@@ -91,7 +95,7 @@ contract DealEscrowTest is Test {
         vm.prank(advertiser);
         dealEscrow.fundDeal{value: 1_000}();
 
-        vm.prank(advertiser);
+        vm.prank(impressionReporter);
         dealEscrow.recordConfirmedImpressions(500);
 
         vm.prank(publisher);
@@ -106,7 +110,7 @@ contract DealEscrowTest is Test {
         vm.prank(advertiser);
         dealEscrow.fundDeal{value: 10_000}();
 
-        vm.prank(advertiser);
+        vm.prank(impressionReporter);
         dealEscrow.recordConfirmedImpressions(500);
 
         uint256 publisherBalanceBefore = publisher.balance;
@@ -123,7 +127,7 @@ contract DealEscrowTest is Test {
         vm.prank(advertiser);
         dealEscrow.fundDeal{value: 10_000}();
 
-        vm.prank(advertiser);
+        vm.prank(impressionReporter);
         dealEscrow.recordConfirmedImpressions(500);
 
         vm.prank(advertiser);
@@ -143,7 +147,7 @@ contract DealEscrowTest is Test {
         vm.prank(advertiser);
         dealEscrow.fundDeal{value: 10_000}();
 
-        vm.prank(advertiser);
+        vm.prank(impressionReporter);
         dealEscrow.recordConfirmedImpressions(400);
 
         vm.prank(advertiser);
@@ -174,7 +178,7 @@ contract DealEscrowTest is Test {
         vm.expectRevert(abi.encodeWithSelector(DealEscrow.DealClosedError.selector));
         dealEscrow.fundDeal{value: 1 wei}();
 
-        vm.prank(advertiser);
+        vm.prank(impressionReporter);
         vm.expectRevert(abi.encodeWithSelector(DealEscrow.DealClosedError.selector));
         dealEscrow.recordConfirmedImpressions(1);
     }

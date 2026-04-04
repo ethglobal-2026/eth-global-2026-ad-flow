@@ -151,7 +151,8 @@ const Transaction: NextPage = () => {
             </div>
 
             <div className="bg-primary/10 rounded-lg p-4 mb-6 text-sm text-primary leading-relaxed">
-              Funds lock in smart-contract escrow. This demo simulates the wallet confirmation only.
+              Funds lock in smart-contract escrow. This demo simulates the wallet confirmation flow while payouts
+              are modeled as streaming per verified impressions.
             </div>
 
             <button type="button" className="btn btn-primary w-full btn-lg" onClick={() => setModalOpen(true)}>
