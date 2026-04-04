@@ -149,11 +149,71 @@ const AdvertiserDashboard: NextPage = () => {
     void loadOnchainStats();
   }, [campaigns, publicClient]);
 
+  const totalPaid = Object.values(chainStats).reduce((sum, s) => sum + s.totalPaid, 0);
+  const totalDelivered = Object.values(chainStats).reduce((sum, s) => sum + s.confirmedImpressions, 0);
+  const activeDeals = campaigns.filter(c => c.onchainDealId && !chainStats[c.id]?.closed).length;
+
   return (
     <div className="min-h-screen bg-base-200">
       <Topbar variant="advertiser" activeTab="dashboard" />
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
+      <div className="max-w-6xl mx-auto px-6 py-8 relative">
+        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute -top-24 -left-20 w-72 h-72 rounded-full bg-primary/10 blur-3xl" />
+          <div className="absolute top-20 right-0 w-80 h-80 rounded-full bg-info/10 blur-3xl" />
+        </div>
+
+        <div className="card bg-base-100 border border-base-300 shadow-xl mb-8 overflow-hidden">
+          <div className="card-body relative">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-info to-primary" />
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <p className="text-xs tracking-[0.2em] uppercase text-base-content/40 m-0">Control Center</p>
+                <h1 className="text-3xl font-bold text-base-content">Advertiser dashboard</h1>
+                <p className="text-base-content/60 mt-1 m-0">
+                  {profile?.displayName ?? sessionAdvertiser?.displayName ?? "Sign in to manage campaigns"}
+                  {profile?.email
+                    ? ` · ${profile.email}`
+                    : sessionAdvertiser?.email
+                      ? ` · ${sessionAdvertiser.email}`
+                      : null}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {advertiserId ? (
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => void loadData()}>
+                    Refresh
+                  </button>
+                ) : null}
+                <Link href="/advertiser/campaign/new" className="btn btn-primary btn-sm">
+                  Launch new campaign
+                </Link>
+                <Link href="/advertiser/settings" className="btn btn-ghost btn-sm">
+                  Settings
+                </Link>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
+              <div className="rounded-xl bg-base-200/70 border border-base-300 p-3">
+                <p className="text-xs uppercase text-base-content/50 m-0">Campaigns</p>
+                <p className="text-xl font-bold m-0">{campaigns.length}</p>
+              </div>
+              <div className="rounded-xl bg-base-200/70 border border-base-300 p-3">
+                <p className="text-xs uppercase text-base-content/50 m-0">Live Deals</p>
+                <p className="text-xl font-bold m-0">{activeDeals}</p>
+              </div>
+              <div className="rounded-xl bg-base-200/70 border border-base-300 p-3">
+                <p className="text-xs uppercase text-base-content/50 m-0">Impressions</p>
+                <p className="text-xl font-bold m-0">{totalDelivered.toLocaleString()}</p>
+              </div>
+              <div className="rounded-xl bg-base-200/70 border border-base-300 p-3">
+                <p className="text-xs uppercase text-base-content/50 m-0">Paid On-chain</p>
+                <p className="text-xl font-bold text-primary m-0">${totalPaid.toFixed(4)}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between mb-8 flex-wrap gap-4 hidden">
           <div>
             <h1 className="text-3xl font-bold text-base-content">Advertiser dashboard</h1>
             <p className="text-base-content/60 mt-1 m-0">

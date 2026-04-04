@@ -112,23 +112,56 @@ function PublisherDashboardInner() {
   return (
     <div className="min-h-screen bg-base-200">
       <Topbar variant="publisher" activeTab="dashboard" />
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-base-content">Publisher Dashboard</h1>
-            <p className="text-base-content/60 mt-1 m-0">
-              {publisher?.siteUrl ?? sessionPublisher?.siteUrl ?? "Complete onboarding to link your site"}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {publisherId ? (
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => void loadDashboard()}>
-                Refresh
-              </button>
-            ) : null}
-            <span className={`badge badge-lg ${publisher ? "badge-success" : "badge-ghost"}`}>
-              {publisher ? "Listing active" : "No listing loaded"}
-            </span>
+      <div className="max-w-6xl mx-auto px-6 py-8 relative">
+        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-primary/10 blur-3xl" />
+          <div className="absolute top-16 right-0 w-80 h-80 rounded-full bg-info/10 blur-3xl" />
+        </div>
+
+        <div className="card bg-base-100 border border-base-300 shadow-xl mb-8 overflow-hidden">
+          <div className="card-body relative">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-info to-primary" />
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <p className="text-xs tracking-[0.2em] uppercase text-base-content/40 m-0">Revenue Center</p>
+                <h1 className="text-3xl font-bold text-base-content">Publisher dashboard</h1>
+                <p className="text-base-content/60 mt-1 m-0">
+                  {publisher?.siteUrl ?? sessionPublisher?.siteUrl ?? "Complete onboarding to link your site"}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {publisherId ? (
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => void loadDashboard()}>
+                    Refresh
+                  </button>
+                ) : null}
+                <span className={`badge badge-lg ${publisher ? "badge-success" : "badge-ghost"}`}>
+                  {publisher ? "Listing active" : "No listing loaded"}
+                </span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
+              <div className="rounded-xl bg-base-200/70 border border-base-300 p-3">
+                <p className="text-xs uppercase text-base-content/50 m-0">Active Campaigns</p>
+                <p className="text-xl font-bold m-0">{dashboard?.stats.activeCampaignCount ?? 0}</p>
+              </div>
+              <div className="rounded-xl bg-base-200/70 border border-base-300 p-3">
+                <p className="text-xs uppercase text-base-content/50 m-0">In Escrow</p>
+                <p className="text-xl font-bold text-warning m-0">
+                  {escrowTotals === null ? "—" : fmtEth(escrowTotals.remaining)}
+                </p>
+              </div>
+              <div className="rounded-xl bg-base-200/70 border border-base-300 p-3">
+                <p className="text-xs uppercase text-base-content/50 m-0">Claimed</p>
+                <p className="text-xl font-bold text-primary m-0">
+                  {escrowTotals === null ? "—" : fmtEth(escrowTotals.claimed)}
+                </p>
+              </div>
+              <div className="rounded-xl bg-base-200/70 border border-base-300 p-3">
+                <p className="text-xs uppercase text-base-content/50 m-0">Floor / 1K</p>
+                <p className="text-xl font-bold m-0">${dashboard?.stats.floorPricePer1kUsd ?? "0.00"}</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -194,36 +227,6 @@ function PublisherDashboardInner() {
                     </div>
                   </div>
                 ) : null}
-              </div>
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-              <div className="card bg-base-100 border border-base-300 p-5 text-center">
-                <div className="text-2xl md:text-3xl font-bold text-base-content">
-                  {dashboard.stats.activeCampaignCount}
-                </div>
-                <div className="text-xs uppercase tracking-wider text-base-content/40 mt-1">Active campaigns</div>
-              </div>
-              <div className="card bg-base-100 border border-base-300 p-5 text-center">
-                <div className="text-2xl md:text-3xl font-bold text-warning">
-                  {escrowTotals === null ? (
-                    <span className="loading loading-dots loading-sm" />
-                  ) : (
-                    fmtEth(escrowTotals.remaining)
-                  )}
-                </div>
-                <div className="text-xs uppercase tracking-wider text-base-content/40 mt-1">In Escrow</div>
-              </div>
-              <div className="card bg-base-100 border border-base-300 p-5 text-center">
-                <div className="text-2xl md:text-3xl font-bold text-primary">
-                  {escrowTotals === null ? (
-                    <span className="loading loading-dots loading-sm" />
-                  ) : (
-                    fmtEth(escrowTotals.claimed)
-                  )}
-                </div>
-                <div className="text-xs uppercase tracking-wider text-base-content/40 mt-1">Claimed</div>
               </div>
             </div>
 
