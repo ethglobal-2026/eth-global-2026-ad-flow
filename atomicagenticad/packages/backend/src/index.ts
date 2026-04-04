@@ -5,4 +5,7 @@ const port = Number(process.env.PORT ?? 3001);
 
 console.log(`Backend running on http://localhost:${port}`);
 
-serve({ fetch: app.fetch, port });
+const server = serve({ fetch: app.fetch, port });
+
+process.on("SIGTERM", () => server.close());
+process.on("SIGINT", () => server.close());
