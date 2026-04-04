@@ -58,8 +58,8 @@ export function memoryCreatePublisher(values: Insert): Publisher {
     language: values.language ?? null,
     estimatedMonthlyTraffic: values.estimatedMonthlyTraffic ?? null,
     audience: values.audience ?? null,
-    floorPricePer1kUsd: values.floorPricePer1kUsd,
-    adFormat: values.adFormat,
+    floorPricePer1kUsd: values.floorPricePer1kUsd ?? "0",
+    adFormat: values.adFormat ?? "Both",
     blockedCategories: values.blockedCategories ?? [],
     preferredAdvertiserTypes: values.preferredAdvertiserTypes ?? [],
   };

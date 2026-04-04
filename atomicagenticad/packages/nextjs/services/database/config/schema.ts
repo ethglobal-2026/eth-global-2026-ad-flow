@@ -25,3 +25,17 @@ export const publishers = pgTable("publishers", {
     .default(sql`'[]'::jsonb`),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+export const publisherCampaigns = pgTable("publisher_campaigns", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  publisherId: uuid("publisher_id")
+    .notNull()
+    .references(() => publishers.id, { onDelete: "cascade" }),
+  advertiserName: varchar("advertiser_name", { length: 255 }).notNull(),
+  advertiserCategory: varchar("advertiser_category", { length: 255 }),
+  impressionsServed: integer("impressions_served").notNull().default(0),
+  impressionsTotal: integer("impressions_total").notNull(),
+  revenueUsdc: varchar("revenue_usdc", { length: 32 }).notNull().default("0"),
+  status: varchar("status", { length: 32 }).notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});

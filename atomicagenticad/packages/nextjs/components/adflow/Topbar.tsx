@@ -44,7 +44,7 @@ export const Topbar = ({ variant, activeTab, onboardingLabel }: TopbarProps) => 
             </button>
             <button
               className={`btn btn-ghost btn-sm ${activeTab === "campaigns" ? "bg-base-300" : ""}`}
-              onClick={() => router.push("/publisher/dashboard")}
+              onClick={() => router.push("/publisher/dashboard#campaigns")}
             >
               Campaigns
             </button>
