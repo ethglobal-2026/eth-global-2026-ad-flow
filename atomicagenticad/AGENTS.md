@@ -6,6 +6,14 @@ This file provides guidance to coding agents working in this repository.
 
 **This project is AdFlow** — an agent-powered ad marketplace for the open web. Publishers list their sites, advertisers find them via AI agents, and payments stream on-chain via USDC escrow contracts verified by Chainlink.
 
+For any Chainlink CRE work, use the official Chainlink CRE documentation as the source of truth: https://docs.chain.link/cre
+
+- Do not guess Chainlink CRE APIs, workflow steps, contract interfaces, or configuration details from memory.
+- Do not rely on third-party blog posts, old examples, or generic Chainlink patterns if they conflict with the CRE docs.
+- Before implementing or modifying any Chainlink CRE integration, verify the exact setup, prerequisites, supported flows, and naming in the official docs.
+- If the repository code and the current Chainlink CRE docs appear to disagree, treat the docs as authoritative and call out the mismatch clearly in your response or code comments.
+- When writing code, configs, or deployment logic for Chainlink CRE, prefer patterns that map directly to the official documentation instead of inventing abstractions.
+
 The codebase is built on Scaffold-ETH 2 (SE-2), a starter kit for Ethereum dApps. It comes in **two flavors** based on the Solidity framework:
 
 - **Hardhat flavor**: Uses `packages/hardhat` with hardhat-deploy plugin
