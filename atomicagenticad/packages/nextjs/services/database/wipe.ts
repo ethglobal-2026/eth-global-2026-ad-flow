@@ -8,6 +8,7 @@ async function main() {
     throw new Error("POSTGRES_URL is not configured");
   }
 
+  await db.execute(sql`truncate table advertisers restart identity cascade`);
   await db.execute(sql`truncate table publishers restart identity cascade`);
 }
 

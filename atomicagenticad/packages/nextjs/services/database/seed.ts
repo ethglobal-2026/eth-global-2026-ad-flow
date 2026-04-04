@@ -1,4 +1,6 @@
 import { closeDb } from "~~/services/database/config/postgresClient";
+import { createAdvertiserCampaign } from "~~/services/database/repositories/advertiserCampaigns";
+import { createAdvertiser } from "~~/services/database/repositories/advertisers";
 import { insertPublisherCampaigns } from "~~/services/database/repositories/publisherCampaigns";
 import { createPublisher } from "~~/services/database/repositories/publishers";
 
@@ -8,6 +10,23 @@ async function main() {
   if (!connectionString) {
     throw new Error("POSTGRES_URL is not configured");
   }
+
+  const adv = await createAdvertiser({
+    email: "advertiser-demo@example.com",
+    walletAddress: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    displayName: "Demo Advertiser",
+    companyName: "BeanBox Inc",
+    about: "Coffee subscription brand focused on specialty and Arabic coffee culture.",
+  });
+
+  await createAdvertiserCampaign({
+    advertiserId: adv.id,
+    productDescription: "BeanBox — premium coffee subscription",
+    targetAudience: "Coffee enthusiasts aged 25–45, specialty brewing interest.",
+    budgetUsdc: "200.00",
+    targetImpressions: 50_000,
+    creativeFileName: null,
+  });
 
   const pub = await createPublisher({
     email: "publisher@example.com",

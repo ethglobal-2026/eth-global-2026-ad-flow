@@ -22,6 +22,20 @@
       "when": 1775310000000,
       "tag": "0002_publisher_campaigns",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1775320000000,
+      "tag": "0003_advertisers_onboarding",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1775330000000,
+      "tag": "0004_advertiser_profile_campaigns",
+      "breakpoints": true
     }
   ]
 }

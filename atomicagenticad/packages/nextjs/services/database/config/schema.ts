@@ -39,3 +39,27 @@ export const publisherCampaigns = pgTable("publisher_campaigns", {
   status: varchar("status", { length: 32 }).notNull().default("active"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+/** Advertiser account (wallet + identity). Campaign briefs live in `advertiser_campaigns`. */
+export const advertisers = pgTable("advertisers", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  walletAddress: varchar("wallet_address", { length: 42 }).notNull().unique(),
+  displayName: varchar("display_name", { length: 255 }).notNull(),
+  companyName: varchar("company_name", { length: 255 }),
+  about: text("about"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const advertiserCampaigns = pgTable("advertiser_campaigns", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  advertiserId: uuid("advertiser_id")
+    .notNull()
+    .references(() => advertisers.id, { onDelete: "cascade" }),
+  productDescription: text("product_description").notNull(),
+  targetAudience: text("target_audience").notNull(),
+  budgetUsdc: varchar("budget_usdc", { length: 32 }).notNull(),
+  targetImpressions: integer("target_impressions").notNull(),
+  creativeFileName: varchar("creative_file_name", { length: 512 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});

@@ -3,26 +3,30 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { NextPage } from "next";
+import type { CreateAdvertiserRequest, CreateAdvertiserResponse } from "~~/app/api/advertisers/route";
 import { Stepper } from "~~/components/adflow/Stepper";
 import { Topbar } from "~~/components/adflow/Topbar";
+import type { AdvertiserSessionSummary } from "~~/types/adflow";
+import { notification } from "~~/utils/scaffold-eth";
 
-const STEPS = [{ label: "Sign Up" }, { label: "Campaign" }];
+const STEPS = [{ label: "Account" }, { label: "Profile" }];
 
 const AdvertiserOnboard: NextPage = () => {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
-  const [product, setProduct] = useState("BeanBox — premium coffee subscription");
-  const [audience, setAudience] = useState(
-    "Find me English-language websites specializing in Arabic coffee, specialty brewing, or coffee culture. Target audience: coffee enthusiasts aged 25-45.",
-  );
-  const [budget, setBudget] = useState("200");
-  const [impressions, setImpressions] = useState("50000");
-  const [fileLabel, setFileLabel] = useState<string | null>(null);
+  const [walletAddress, setWalletAddress] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [about, setAbout] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const walletLooksValid = /^0x[a-fA-F0-9]{40}$/.test(walletAddress.trim());
 
   return (
     <div className="min-h-screen bg-base-200">
-      <Topbar variant="onboarding" onboardingLabel="Advertiser Onboarding" />
+      <Topbar variant="onboarding" onboardingLabel="Advertiser onboarding" />
       <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] px-6 py-12">
         <div className="card bg-base-100 border border-base-300 shadow-xl w-full max-w-lg">
           <div className="card-body">
@@ -32,10 +36,11 @@ const AdvertiserOnboard: NextPage = () => {
               <>
                 <h2 className="card-title text-2xl">Welcome, Advertiser</h2>
                 <p className="text-base-content/60 text-sm mb-6">
-                  Enter your email to start discovering niche publishers for your brand.
+                  Create your AdFlow account. We&apos;ll use your email for notifications and your wallet for USDC
+                  escrow.
                 </p>
                 <fieldset className="fieldset">
-                  <legend className="fieldset-legend">Email Address</legend>
+                  <legend className="fieldset-legend">Email</legend>
                   <input
                     type="email"
                     className="input input-bordered w-full bg-base-200"
@@ -44,80 +49,120 @@ const AdvertiserOnboard: NextPage = () => {
                     onChange={e => setEmail(e.target.value)}
                   />
                 </fieldset>
-                <button className="btn btn-primary w-full mt-2" onClick={() => setStep(2)}>
+                <button className="btn btn-primary w-full mt-2" disabled={!emailLooksValid} onClick={() => setStep(2)}>
                   Continue
                 </button>
-                <p className="text-xs text-center text-base-content/40 m-0">
-                  Powered by Dynamic — no crypto wallet needed
-                </p>
               </>
             )}
 
             {step === 2 && (
               <>
-                <h2 className="card-title text-2xl">Describe Your Campaign</h2>
+                <h2 className="card-title text-2xl">Wallet & profile</h2>
                 <p className="text-base-content/60 text-sm mb-6">
-                  Tell our agent what you&apos;re looking for — in plain English.
+                  Link the wallet that will fund campaigns. You can connect in the header and paste the same address
+                  here.
                 </p>
                 <fieldset className="fieldset">
-                  <legend className="fieldset-legend">What are you promoting?</legend>
+                  <legend className="fieldset-legend">Wallet address</legend>
+                  <input
+                    type="text"
+                    className="input input-bordered w-full bg-base-200 font-mono text-sm"
+                    placeholder="0x…"
+                    autoComplete="off"
+                    spellCheck={false}
+                    value={walletAddress}
+                    onChange={e => setWalletAddress(e.target.value)}
+                  />
+                  <p className="fieldset-label">40 hex characters after 0x</p>
+                </fieldset>
+                <fieldset className="fieldset">
+                  <legend className="fieldset-legend">Your name</legend>
                   <input
                     type="text"
                     className="input input-bordered w-full bg-base-200"
-                    value={product}
-                    onChange={e => setProduct(e.target.value)}
+                    placeholder="Alex Kim"
+                    value={displayName}
+                    onChange={e => setDisplayName(e.target.value)}
                   />
                 </fieldset>
                 <fieldset className="fieldset">
-                  <legend className="fieldset-legend">Target Audience</legend>
+                  <legend className="fieldset-legend">Company (optional)</legend>
+                  <input
+                    type="text"
+                    className="input input-bordered w-full bg-base-200"
+                    placeholder="Acme Brands"
+                    value={companyName}
+                    onChange={e => setCompanyName(e.target.value)}
+                  />
+                </fieldset>
+                <fieldset className="fieldset">
+                  <legend className="fieldset-legend">About you (optional)</legend>
                   <textarea
                     className="textarea textarea-bordered w-full bg-base-200"
                     rows={3}
-                    value={audience}
-                    onChange={e => setAudience(e.target.value)}
+                    placeholder="What you advertise, industries, or goals — helps publishers understand who you are."
+                    value={about}
+                    onChange={e => setAbout(e.target.value)}
                   />
                 </fieldset>
-                <div className="grid grid-cols-2 gap-4">
-                  <fieldset className="fieldset">
-                    <legend className="fieldset-legend">Budget (USDC)</legend>
-                    <label className="input input-bordered flex items-center gap-2 bg-base-200">
-                      <span className="text-base-content/60 font-semibold">$</span>
-                      <input type="number" value={budget} onChange={e => setBudget(e.target.value)} className="grow" />
-                    </label>
-                  </fieldset>
-                  <fieldset className="fieldset">
-                    <legend className="fieldset-legend">Target Impressions</legend>
-                    <input
-                      type="number"
-                      className="input input-bordered w-full bg-base-200"
-                      value={impressions}
-                      onChange={e => setImpressions(e.target.value)}
-                    />
-                  </fieldset>
-                </div>
-                <fieldset className="fieldset">
-                  <legend className="fieldset-legend">Ad Creative</legend>
-                  <div
-                    className="border-2 border-dashed border-base-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
-                    onClick={() => setFileLabel("beanbox-banner-728x90.png")}
+                <div className="flex gap-2 mt-2">
+                  <button
+                    type="button"
+                    className="btn btn-ghost flex-1"
+                    onClick={() => setStep(1)}
+                    disabled={submitting}
                   >
-                    {fileLabel ? (
-                      <>
-                        <div className="text-primary font-semibold">{fileLabel}</div>
-                        <div className="text-sm text-base-content/50 mt-1">Ready to upload</div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="text-2xl mb-2">📎</div>
-                        <div className="text-sm text-base-content/50">Drop your banner here or click to browse</div>
-                        <div className="text-xs text-base-content/30 mt-1">728x90 or 300x250 PNG/JPG</div>
-                      </>
-                    )}
-                  </div>
-                </fieldset>
-                <button className="btn btn-primary w-full mt-2" onClick={() => router.push("/advertiser/discovery")}>
-                  Find Publishers
-                </button>
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary flex-[2]"
+                    disabled={submitting || !walletLooksValid || !displayName.trim()}
+                    onClick={async () => {
+                      setSubmitting(true);
+                      try {
+                        const payload: CreateAdvertiserRequest = {
+                          email: email.trim(),
+                          walletAddress: walletAddress.trim(),
+                          displayName: displayName.trim(),
+                          companyName: companyName.trim() || null,
+                          about: about.trim() || null,
+                        };
+                        const res = await fetch("/api/advertisers", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify(payload),
+                        });
+                        const data: CreateAdvertiserResponse | { error?: string } = await res.json().catch(() => ({}));
+                        if (!res.ok) {
+                          notification.error(
+                            typeof data === "object" && data && "error" in data && typeof data.error === "string"
+                              ? data.error
+                              : "Could not create your account.",
+                          );
+                          setSubmitting(false);
+                          return;
+                        }
+                        const created = data as CreateAdvertiserResponse;
+                        const summary: AdvertiserSessionSummary = {
+                          id: created.id,
+                          email: created.email,
+                          walletAddress: created.walletAddress,
+                          displayName: created.displayName,
+                        };
+                        sessionStorage.setItem("adflow_advertiser", JSON.stringify(summary));
+                        notification.success("Account ready — open your dashboard to launch campaigns.");
+                        router.push("/advertiser/dashboard");
+                      } catch {
+                        notification.error("Network error — try again.");
+                        setSubmitting(false);
+                      }
+                    }}
+                  >
+                    {submitting ? <span className="loading loading-spinner loading-sm" /> : null}
+                    {submitting ? "Saving…" : "Continue to campaign"}
+                  </button>
+                </div>
               </>
             )}
           </div>

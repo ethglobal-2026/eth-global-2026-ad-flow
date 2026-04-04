@@ -240,7 +240,10 @@ All product pages live under `packages/nextjs/app/` and follow this route struct
 | `/publisher/onboard` | Publisher onboarding (3-step) |
 | `/publisher/dashboard` | Publisher earnings dashboard |
 | `/publisher/wallet` | Publisher wallet & payment history |
-| `/advertiser/onboard` | Advertiser campaign setup (2-step) |
+| `/advertiser/onboard` | Advertiser account (2-step: email, then wallet + profile) |
+| `/advertiser/dashboard` | Advertiser hub: campaigns list, launch new, shortcuts to discovery / settings / wallet |
+| `/advertiser/settings` | Read-only account & wallet details (session-scoped) |
+| `/advertiser/campaign/new` | Create a campaign (brief, budget, impressions, creative filename) |
 | `/advertiser/discovery` | AI-powered publisher discovery |
 | `/advertiser/transaction` | Order review & escrow funding |
 | `/advertiser/campaign` | Live campaign dashboard |
@@ -373,6 +376,9 @@ async function handle(request: NextRequest) {
 | `/api/analyze-site` | `POST` | Analyzes a publisher's website using Claude. Body: `{ url: string }`. Returns `SiteAnalysis`. |
 | `/api/publishers` | `GET`, `POST` | Publisher listings. `GET` returns all rows. `POST` creates a publisher from onboarding: body type `CreatePublisherRequest` (email, `siteUrl`, analysis fields, `floorPricePer1kUsd`, `adFormat`, category tag arrays; optional `walletAddress`). Returns `CreatePublisherResponse` (201) or `{ error }`. |
 | `/api/publishers/[id]` | `GET` | Returns one publisher by UUID or 404. |
+| `/api/advertisers` | `GET`, `POST` | Advertiser accounts (profile + wallet). `GET` returns all rows. `POST` body `CreateAdvertiserRequest` (`email`, `walletAddress`, `displayName`; optional `companyName`, `about`). Returns `CreateAdvertiserResponse` (201) or `{ error }` (409 duplicate email or wallet). |
+| `/api/advertisers/[id]` | `GET` | Returns one advertiser by UUID or 404. |
+| `/api/advertisers/[id]/campaigns` | `GET`, `POST` | Campaigns for that advertiser. `POST` body `CreateAdvertiserCampaignRequest` (`productDescription`, `targetAudience`, `budgetUsdc`, `targetImpressions`; optional `creativeFileName`). Returns `CreateAdvertiserCampaignResponse` (201). |
 | `/api/publishers/[id]/dashboard` | `GET` | Publisher dashboard payload: full `publisher` row, `campaigns[]`, and computed `stats` (revenue, impressions, escrow estimate). |
 
 ---

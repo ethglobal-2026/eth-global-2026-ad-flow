@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { NextPage } from "next";
 import { Topbar } from "~~/components/adflow/Topbar";
 
@@ -12,6 +13,7 @@ const TIMELINE = [
 ];
 
 const CampaignDashboard: NextPage = () => {
+  const router = useRouter();
   const [impressions, setImpressions] = useState(22400);
 
   useEffect(() => {
@@ -35,7 +37,10 @@ const CampaignDashboard: NextPage = () => {
             <h1 className="text-2xl font-bold text-base-content">Campaign: BeanBox Coffee</h1>
             <p className="text-base-content/50 text-sm mt-1 m-0">arabicacoffee.blog · Started April 3, 2026</p>
           </div>
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center flex-wrap justify-end">
+            <button className="btn btn-primary btn-sm" onClick={() => router.push("/advertiser/campaign/new")}>
+              New campaign
+            </button>
             <span className="badge badge-success">Active</span>
             <button className="btn btn-outline btn-primary btn-sm">Pause Campaign</button>
           </div>

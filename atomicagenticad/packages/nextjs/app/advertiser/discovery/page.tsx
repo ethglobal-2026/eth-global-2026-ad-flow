@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { NextPage } from "next";
 import { AgentLoader } from "~~/components/adflow/AgentLoader";
 import { Topbar } from "~~/components/adflow/Topbar";
+import type { AdvertiserCampaignSessionSummary } from "~~/types/adflow";
 
 const AGENT_LINES = [
   "Parsing campaign brief...",
@@ -82,9 +83,27 @@ const PUBLISHERS: Publisher[] = [
   },
 ];
 
+const DEFAULT_BRIEF_SNIPPET = "Arabic coffee, specialty brewing, coffee culture";
+
 const Discovery: NextPage = () => {
   const router = useRouter();
   const [searching, setSearching] = useState(true);
+  const [briefSnippet, setBriefSnippet] = useState(DEFAULT_BRIEF_SNIPPET);
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem("adflow_advertiser_campaign");
+    if (!raw) return;
+    try {
+      const c = JSON.parse(raw) as AdvertiserCampaignSessionSummary;
+      const text = [c.productDescription, c.targetAudience].filter(Boolean).join(" · ");
+      if (text.trim()) {
+        const max = 120;
+        setBriefSnippet(text.length > max ? `${text.slice(0, max)}…` : text);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-base-200">
@@ -106,7 +125,7 @@ const Discovery: NextPage = () => {
               <div>
                 <h1 className="text-2xl font-bold text-base-content">3 Publishers Found</h1>
                 <p className="text-base-content/60 text-sm mt-1 m-0">
-                  Ranked by relevance to: &quot;Arabic coffee, specialty brewing, coffee culture&quot;
+                  Ranked by relevance to: &quot;{briefSnippet}&quot;
                 </p>
               </div>
               <button className="btn btn-outline btn-primary btn-sm" onClick={() => setSearching(true)}>
