@@ -3,6 +3,9 @@
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { NextPage } from "next";
+import { parseUnits } from "viem";
+import { arcTestnet } from "viem/chains";
+import { useAccount, useSwitchChain } from "wagmi";
 import type {
   CreateAdvertiserCampaignRequest,
   CreateAdvertiserCampaignResponse,
@@ -10,18 +13,11 @@ import type {
 import type { PublishersResponse } from "~~/app/api/publishers/route";
 import { Stepper } from "~~/components/adflow/Stepper";
 import { Topbar } from "~~/components/adflow/Topbar";
-import type {
-  AdvertiserCampaignSessionSummary,
-  AdvertiserCheckoutPublisher,
-  AdvertiserCheckoutSession,
-  AdvertiserSessionSummary,
-  Publisher,
-} from "~~/types/adflow";
-import { notification } from "~~/utils/scaffold-eth";
+import { useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
+import type { AdvertiserCampaignSessionSummary, AdvertiserSessionSummary, Publisher } from "~~/types/adflow";
+import { getParsedError, notification } from "~~/utils/scaffold-eth";
 
 const STEPS = [{ label: "Campaign" }, { label: "Sites" }, { label: "Confirm" }];
-
-const CHECKOUT_SESSION_KEY = "adflow_advertiser_checkout";
 
 function scorePublisherMatch(brief: string, pub: Publisher): number {
   const text = `${pub.category} ${pub.contentFocus ?? ""} ${pub.audience ?? ""} ${pub.name}`.toLowerCase();
@@ -37,20 +33,38 @@ function scorePublisherMatch(brief: string, pub: Publisher): number {
   return Math.min(98, Math.round(base));
 }
 
-function toCheckoutPublisher(pub: Publisher, matchScore: number): AdvertiserCheckoutPublisher {
-  return {
-    id: pub.id,
-    siteUrl: pub.siteUrl,
-    name: pub.name,
-    category: pub.category,
-    floorPricePer1kUsd: pub.floorPricePer1kUsd,
-    adFormat: pub.adFormat,
-    matchScore,
-  };
+function splitEvenBigInt(total: bigint, count: number): bigint[] {
+  const c = BigInt(count);
+  const base = total / c;
+  let remainder = total % c;
+  const out: bigint[] = [];
+  for (let i = 0; i < count; i++) {
+    const plusOne = remainder > 0n ? 1n : 0n;
+    out.push(base + plusOne);
+    if (remainder > 0n) remainder -= 1n;
+  }
+  return out;
+}
+
+function splitEvenInt(total: number, count: number): number[] {
+  const base = Math.floor(total / count);
+  let remainder = total % count;
+  const out: number[] = [];
+  for (let i = 0; i < count; i++) {
+    const plusOne = remainder > 0 ? 1 : 0;
+    out.push(base + plusOne);
+    if (remainder > 0) remainder -= 1;
+  }
+  return out;
 }
 
 const NewAdvertiserCampaign: NextPage = () => {
   const router = useRouter();
+  const { chain } = useAccount();
+  const { switchChainAsync } = useSwitchChain();
+  const { writeContractAsync: writeDealFactoryAsync } = useScaffoldWriteContract({
+    contractName: "DealFactory",
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [advertiser, setAdvertiser] = useState<AdvertiserSessionSummary | null>(null);
   const [step, setStep] = useState(1);
@@ -176,8 +190,8 @@ const NewAdvertiserCampaign: NextPage = () => {
             <Stepper steps={STEPS} current={step} />
             <h2 className="card-title text-2xl mt-2">New campaign</h2>
             <p className="text-base-content/60 text-sm mb-4 m-0">
-              Logged in as <span className="font-medium text-base-content">{advertiser.displayName}</span> — brief,
-              pick sites, confirm, then fund escrow on the next screen.
+              Logged in as <span className="font-medium text-base-content">{advertiser.displayName}</span> — brief, pick
+              sites, confirm, and fund escrow.
             </p>
 
             {step === 1 && (
@@ -253,7 +267,11 @@ const NewAdvertiserCampaign: NextPage = () => {
                   </div>
                 </fieldset>
                 <div className="flex gap-2 mt-4">
-                  <button type="button" className="btn btn-ghost flex-1" onClick={() => router.push("/advertiser/dashboard")}>
+                  <button
+                    type="button"
+                    className="btn btn-ghost flex-1"
+                    onClick={() => router.push("/advertiser/dashboard")}
+                  >
                     Back to dashboard
                   </button>
                   <button
@@ -351,6 +369,11 @@ const NewAdvertiserCampaign: NextPage = () => {
                         notification.error("Select at least one publisher.");
                         return;
                       }
+                      const missingOnchain = selectedList.filter(({ pub }) => !pub.onchainPublisherId);
+                      if (missingOnchain.length > 0) {
+                        notification.error("One or more selected publishers are not registered on-chain yet.");
+                        return;
+                      }
                       setStep(3);
                     }}
                   >
@@ -394,9 +417,8 @@ const NewAdvertiserCampaign: NextPage = () => {
                 <div className="rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 mb-4 text-sm text-base-content">
                   <p className="font-semibold text-primary m-0 mb-1">Locked in escrow</p>
                   <p className="m-0 text-base-content/80 leading-relaxed">
-                    The next step is payment: you will fund escrow with the full{" "}
-                    <span className="font-semibold text-base-content">${budgetDisplay} USDC</span>. That amount is what
-                    locks on-chain; streaming payouts settle per 1K verified impressions.
+                    Confirming now will create and fund one on-chain deal per selected publisher, totaling{" "}
+                    <span className="font-semibold text-base-content">${budgetDisplay} USDC</span>.
                   </p>
                 </div>
                 {estimatedTotalUsdc > 0 && (
@@ -432,6 +454,17 @@ const NewAdvertiserCampaign: NextPage = () => {
                       setSubmitting(true);
                       try {
                         const imp = Number.parseInt(impressions, 10);
+                        if (!Number.isInteger(imp) || imp <= 0) {
+                          notification.error("Target impressions must be a positive whole number.");
+                          setSubmitting(false);
+                          return;
+                        }
+                        if (imp < selectedList.length) {
+                          notification.error("Target impressions must be at least the number of selected publishers.");
+                          setSubmitting(false);
+                          return;
+                        }
+
                         const payload: CreateAdvertiserCampaignRequest = {
                           productDescription: product.trim(),
                           targetAudience: audience.trim(),
@@ -467,25 +500,64 @@ const NewAdvertiserCampaign: NextPage = () => {
                         };
                         sessionStorage.setItem("adflow_advertiser_campaign", JSON.stringify(summary));
 
-                        const checkout: AdvertiserCheckoutSession = {
-                          campaignId: created.id,
-                          budgetUsdc: created.budgetUsdc,
-                          targetImpressions: created.targetImpressions,
-                          productDescription: created.productDescription,
-                          publishers: selectedList.map(({ pub, score }) => toCheckoutPublisher(pub, score)),
-                        };
-                        sessionStorage.setItem(CHECKOUT_SESSION_KEY, JSON.stringify(checkout));
+                        if (chain?.id !== arcTestnet.id) {
+                          try {
+                            await switchChainAsync({ chainId: arcTestnet.id });
+                          } catch {
+                            notification.error(`Please switch your wallet network to ${arcTestnet.name}.`);
+                            setSubmitting(false);
+                            return;
+                          }
+                        }
 
-                        notification.success("Campaign saved — deposit funds to fund escrow.");
-                        router.push("/advertiser/transaction");
-                      } catch {
-                        notification.error("Network error — try again.");
+                        const budgetWei = parseUnits(created.budgetUsdc, 18);
+                        if (budgetWei <= 0n) {
+                          notification.error("Campaign budget must be greater than zero.");
+                          setSubmitting(false);
+                          return;
+                        }
+
+                        const budgetSplits = splitEvenBigInt(budgetWei, selectedList.length);
+                        const impressionSplits = splitEvenInt(created.targetImpressions, selectedList.length);
+
+                        for (let i = 0; i < selectedList.length; i++) {
+                          const selected = selectedList[i];
+                          const onchainPublisherId = selected.pub.onchainPublisherId;
+                          if (!onchainPublisherId) {
+                            notification.error(`Publisher ${selected.pub.name} is missing on-chain ID.`);
+                            setSubmitting(false);
+                            return;
+                          }
+
+                          const dealBudget = budgetSplits[i];
+                          const dealImpressions = impressionSplits[i];
+                          if (dealBudget <= 0n || dealImpressions <= 0) {
+                            notification.error("Invalid per-publisher split; increase budget or impressions.");
+                            setSubmitting(false);
+                            return;
+                          }
+
+                          const txHash = await writeDealFactoryAsync({
+                            functionName: "createDeal",
+                            args: [BigInt(onchainPublisherId), dealBudget, BigInt(dealImpressions)],
+                            value: dealBudget,
+                          });
+                          if (!txHash) {
+                            setSubmitting(false);
+                            return;
+                          }
+                        }
+
+                        notification.success("Campaign created and escrow funded.");
+                        router.push("/advertiser/campaign");
+                      } catch (error) {
+                        notification.error(getParsedError(error));
                         setSubmitting(false);
                       }
                     }}
                   >
                     {submitting ? <span className="loading loading-spinner loading-sm" /> : null}
-                    {submitting ? "Saving…" : "Confirm purchase & deposit funds"}
+                    {submitting ? "Processing…" : "Confirm purchase & fund escrow"}
                   </button>
                 </div>
               </>

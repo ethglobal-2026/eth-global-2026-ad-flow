@@ -8,22 +8,24 @@ type WalletModalProps = {
   amount: string;
   fromAddress: string;
   onClose: () => void;
-  onSuccess: () => void;
+  onConfirm: () => Promise<void>;
 };
 
-export const WalletModal = ({ isOpen, amount, fromAddress, onClose, onSuccess }: WalletModalProps) => {
+export const WalletModal = ({ isOpen, amount, fromAddress, onClose, onConfirm }: WalletModalProps) => {
   const [processing, setProcessing] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     setProcessing(true);
-    setTimeout(() => {
+    try {
+      await onConfirm();
       setProcessing(false);
       onClose();
-      onSuccess();
       notification.success(`Escrow funded! $${amount} USDC locked in smart contract.`);
-    }, 2000);
+    } catch {
+      setProcessing(false);
+    }
   };
 
   return (
@@ -63,7 +65,7 @@ export const WalletModal = ({ isOpen, amount, fromAddress, onClose, onSuccess }:
                 <button className="btn btn-ghost flex-1" onClick={onClose}>
                   Cancel
                 </button>
-                <button className="btn btn-primary flex-[2]" onClick={handleConfirm}>
+                <button className="btn btn-primary flex-[2]" onClick={() => void handleConfirm()}>
                   Confirm & Sign
                 </button>
               </div>

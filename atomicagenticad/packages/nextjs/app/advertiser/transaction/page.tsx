@@ -3,11 +3,46 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { NextPage } from "next";
+import { parseUnits } from "viem";
+import { arcTestnet } from "viem/chains";
+import { useAccount, useSwitchChain } from "wagmi";
 import { Topbar } from "~~/components/adflow/Topbar";
 import { WalletModal } from "~~/components/adflow/WalletModal";
+import { useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
 import type { AdvertiserCheckoutSession, AdvertiserSessionSummary } from "~~/types/adflow";
+import { getParsedError, notification } from "~~/utils/scaffold-eth";
 
 const CHECKOUT_SESSION_KEY = "adflow_advertiser_checkout";
+type DealTx = {
+  publisherName: string;
+  txHash: string;
+  onchainPublisherId: string;
+};
+
+function splitEvenBigInt(total: bigint, count: number): bigint[] {
+  const c = BigInt(count);
+  const base = total / c;
+  let remainder = total % c;
+  const out: bigint[] = [];
+  for (let i = 0; i < count; i++) {
+    const plusOne = remainder > 0n ? 1n : 0n;
+    out.push(base + plusOne);
+    if (remainder > 0n) remainder -= 1n;
+  }
+  return out;
+}
+
+function splitEvenInt(total: number, count: number): number[] {
+  const base = Math.floor(total / count);
+  let remainder = total % count;
+  const out: number[] = [];
+  for (let i = 0; i < count; i++) {
+    const plusOne = remainder > 0 ? 1 : 0;
+    out.push(base + plusOne);
+    if (remainder > 0) remainder -= 1;
+  }
+  return out;
+}
 
 function shortAddr(addr: string) {
   if (addr.length < 12) return addr;
@@ -16,8 +51,14 @@ function shortAddr(addr: string) {
 
 const Transaction: NextPage = () => {
   const router = useRouter();
+  const { chain } = useAccount();
+  const { switchChainAsync } = useSwitchChain();
+  const { writeContractAsync: writeDealFactoryAsync, isMining: creatingDeals } = useScaffoldWriteContract({
+    contractName: "DealFactory",
+  });
   const [modalOpen, setModalOpen] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [deals, setDeals] = useState<DealTx[]>([]);
   const [checkout, setCheckout] = useState<AdvertiserCheckoutSession | null>(null);
   const [advertiser, setAdvertiser] = useState<AdvertiserSessionSummary | null>(null);
 
@@ -59,6 +100,88 @@ const Transaction: NextPage = () => {
 
   const walletHint = advertiser?.walletAddress ? shortAddr(advertiser.walletAddress) : "0x4b2e…a81f";
 
+  const ensureArcNetwork = async () => {
+    if (chain?.id === arcTestnet.id) return true;
+    try {
+      await switchChainAsync({ chainId: arcTestnet.id });
+    } catch {
+      notification.error(`Please switch your wallet network to ${arcTestnet.name}.`);
+      return false;
+    }
+    return true;
+  };
+
+  const fundEscrowAndCreateDeals = async () => {
+    if (!checkout) {
+      notification.error("No active checkout found.");
+      throw new Error("missing_checkout");
+    }
+    if (!advertiser?.walletAddress) {
+      notification.error("No advertiser wallet found in session.");
+      throw new Error("missing_wallet");
+    }
+    if (checkout.publishers.length === 0) {
+      notification.error("No publishers selected for this campaign.");
+      throw new Error("missing_publishers");
+    }
+    if (checkout.targetImpressions < checkout.publishers.length) {
+      notification.error("Target impressions must be at least the number of selected publishers.");
+      throw new Error("invalid_impressions_split");
+    }
+
+    const onArc = await ensureArcNetwork();
+    if (!onArc) {
+      throw new Error("wrong_network");
+    }
+
+    const budgetWei = parseUnits(checkout.budgetUsdc, 18);
+    if (budgetWei <= 0n) {
+      notification.error("Budget must be greater than zero.");
+      throw new Error("invalid_budget");
+    }
+
+    const perPublisherBudgetWei = splitEvenBigInt(budgetWei, checkout.publishers.length);
+    const perPublisherImpressions = splitEvenInt(checkout.targetImpressions, checkout.publishers.length);
+    const createdDeals: DealTx[] = [];
+
+    for (let i = 0; i < checkout.publishers.length; i++) {
+      const publisher = checkout.publishers[i];
+      if (!publisher?.onchainPublisherId) {
+        notification.error(`Publisher ${publisher?.name ?? ""} is missing on-chain publisher ID.`);
+        throw new Error("missing_onchain_publisher_id");
+      }
+
+      const publisherId = BigInt(publisher.onchainPublisherId);
+      const dealBudget = perPublisherBudgetWei[i];
+      const dealImpressions = perPublisherImpressions[i];
+
+      if (dealBudget <= 0n || dealImpressions <= 0) {
+        notification.error("Invalid per-publisher split; increase budget or impressions.");
+        throw new Error("invalid_split");
+      }
+
+      const txHash = await writeDealFactoryAsync({
+        functionName: "createDeal",
+        args: [publisherId, dealBudget, BigInt(dealImpressions)],
+        value: dealBudget,
+      });
+
+      if (!txHash) {
+        throw new Error("deal_creation_failed");
+      }
+
+      createdDeals.push({
+        publisherName: publisher.name,
+        txHash,
+        onchainPublisherId: publisher.onchainPublisherId,
+      });
+    }
+
+    setDeals(createdDeals);
+    setSuccess(true);
+    sessionStorage.removeItem(CHECKOUT_SESSION_KEY);
+  };
+
   return (
     <div className="min-h-screen bg-base-200">
       <Topbar variant="advertiser" />
@@ -70,7 +193,11 @@ const Transaction: NextPage = () => {
               <p className="text-base-content/60 text-sm m-0">
                 Create a campaign, choose publishers, and confirm — you&apos;ll land here to fund escrow.
               </p>
-              <button type="button" className="btn btn-primary mt-2" onClick={() => router.push("/advertiser/campaign/new")}>
+              <button
+                type="button"
+                className="btn btn-primary mt-2"
+                onClick={() => router.push("/advertiser/campaign/new")}
+              >
                 Start new campaign
               </button>
             </div>
@@ -104,7 +231,8 @@ const Transaction: NextPage = () => {
               </div>
               {pricePer1kDisplay != null && (
                 <p className="text-xs text-base-content/45 pt-3 m-0 leading-snug">
-                  Effective blended rate for this order (escrow ÷ impression thousands). Per-site floors are shown below.
+                  Effective blended rate for this order (escrow ÷ impression thousands). Per-site floors are shown
+                  below.
                 </p>
               )}
             </div>
@@ -151,14 +279,23 @@ const Transaction: NextPage = () => {
             </div>
 
             <div className="bg-primary/10 rounded-lg p-4 mb-6 text-sm text-primary leading-relaxed">
-              Funds lock in smart-contract escrow. This demo simulates the wallet confirmation flow while payouts
-              are modeled as streaming per verified impressions.
+              Funds lock in smart-contract escrow. This demo simulates the wallet confirmation flow while payouts are
+              modeled as streaming per verified impressions.
             </div>
 
-            <button type="button" className="btn btn-primary w-full btn-lg" onClick={() => setModalOpen(true)}>
+            <button
+              type="button"
+              className="btn btn-primary w-full btn-lg"
+              disabled={creatingDeals}
+              onClick={() => setModalOpen(true)}
+            >
               Fund escrow — ${amountDisplay} USDC
             </button>
-            <button type="button" className="btn btn-ghost w-full mt-3" onClick={() => router.push("/advertiser/dashboard")}>
+            <button
+              type="button"
+              className="btn btn-ghost w-full mt-3"
+              onClick={() => router.push("/advertiser/dashboard")}
+            >
               Back to dashboard
             </button>
           </>
@@ -189,15 +326,25 @@ const Transaction: NextPage = () => {
               </div>
             )}
             {!checkout && <p className="text-base-content/60 mb-2 m-0">${amountDisplay} USDC (simulated)</p>}
-            <p className="text-sm text-base-content/40 mb-8 m-0">Campaign can begin serving; streaming payouts per 1K impressions.</p>
-            <div className="bg-base-100 border border-base-300 rounded-lg p-4 mb-8 font-mono text-xs text-base-content/50 text-left break-all">
-              Tx: 0x8f3a…7b2e4d91c6f0a3e8
-              <br />
-              Contract: 0xAdFl…0wEscr0w
-              <br />
-              Block: 18,442,691
-            </div>
-            <button type="button" className="btn btn-primary btn-lg" onClick={() => router.push("/advertiser/campaign")}>
+            <p className="text-sm text-base-content/40 mb-8 m-0">
+              Campaign can begin serving; streaming payouts per 1K impressions.
+            </p>
+            {deals.length > 0 && (
+              <div className="bg-base-100 border border-base-300 rounded-lg p-4 mb-8 font-mono text-xs text-base-content/50 text-left break-all space-y-2">
+                {deals.map(d => (
+                  <div key={d.txHash}>
+                    <div className="text-base-content/80">{d.publisherName}</div>
+                    <div>publisherId: {d.onchainPublisherId}</div>
+                    <div>tx: {d.txHash}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button
+              type="button"
+              className="btn btn-primary btn-lg"
+              onClick={() => router.push("/advertiser/campaign")}
+            >
               View campaign dashboard
             </button>
           </div>
@@ -209,9 +356,25 @@ const Transaction: NextPage = () => {
         amount={amountDisplay}
         fromAddress={walletHint}
         onClose={() => setModalOpen(false)}
-        onSuccess={() => {
-          setSuccess(true);
-          sessionStorage.removeItem(CHECKOUT_SESSION_KEY);
+        onConfirm={async () => {
+          try {
+            await fundEscrowAndCreateDeals();
+          } catch (error) {
+            const msg = getParsedError(error);
+            if (
+              msg !== "missing_checkout" &&
+              msg !== "missing_wallet" &&
+              msg !== "missing_publishers" &&
+              msg !== "wrong_network" &&
+              msg !== "invalid_budget" &&
+              msg !== "invalid_impressions_split" &&
+              msg !== "missing_onchain_publisher_id" &&
+              msg !== "invalid_split"
+            ) {
+              notification.error(msg);
+            }
+            throw error;
+          }
         }}
       />
     </div>

@@ -1,5 +1,10 @@
 import type { InferSelectModel } from "drizzle-orm";
-import type { advertiserCampaigns, advertisers, publisherCampaigns, publishers } from "~~/services/database/config/schema";
+import type {
+  advertiserCampaigns,
+  advertisers,
+  publisherCampaigns,
+  publishers,
+} from "~~/services/database/config/schema";
 
 /** Row shape for `publishers` — same as repository `Publisher`; defined here so client code never imports the DB layer. */
 export type Publisher = InferSelectModel<typeof publishers>;
@@ -24,7 +29,7 @@ export type AdvertiserCampaignSessionSummary = Pick<
 /** Checkout payload for `/advertiser/transaction` after confirming a campaign + publisher picks. */
 export type AdvertiserCheckoutPublisher = Pick<
   Publisher,
-  "id" | "siteUrl" | "name" | "category" | "floorPricePer1kUsd" | "adFormat"
+  "id" | "siteUrl" | "name" | "category" | "floorPricePer1kUsd" | "adFormat" | "onchainPublisherId"
 > & { matchScore: number };
 
 export type AdvertiserCheckoutSession = {
