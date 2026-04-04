@@ -16,6 +16,7 @@ contract DealFactoryTest is Test {
     address internal advertiser = vm.addr(2);
     address internal publisher = vm.addr(3);
     address internal outsider = vm.addr(4);
+    address internal deployer = vm.addr(5);
 
     uint256 internal advertiserId;
     uint256 internal publisherId;
@@ -23,7 +24,11 @@ contract DealFactoryTest is Test {
     function setUp() public {
         advertiserRegistry = new AdvertiserRegistry(admin);
         publisherRegistry = new PublisherRegistry(admin);
+        vm.prank(deployer);
         dealFactory = new DealFactory(address(advertiserRegistry), address(publisherRegistry));
+        bytes32 dealManagerRole = publisherRegistry.DEAL_MANAGER_ROLE();
+        vm.prank(admin);
+        publisherRegistry.grantRole(dealManagerRole, address(dealFactory));
 
         vm.prank(advertiser);
         advertiserId = advertiserRegistry.createAdvertiserProfile("Acme Ads", "ipfs://advertiser-1");
@@ -44,9 +49,26 @@ contract DealFactoryTest is Test {
         DealEscrow escrow = DealEscrow(payable(escrowAddress));
         assertEq(escrow.ADVERTISER(), advertiser);
         assertEq(escrow.PUBLISHER(), publisher);
+        assertEq(dealFactory.AUTHORIZED_REPORTER(), deployer);
+        assertEq(escrow.IMPRESSION_REPORTER(), deployer);
+        assertEq(escrow.DEAL_LIFECYCLE_MANAGER(), address(dealFactory));
+        assertEq(escrow.PUBLISHER_ID(), publisherId);
         assertEq(escrow.PRICE_PER_IMPRESSION(), 10);
         assertEq(escrow.TOTAL_BUDGET(), 1_000);
         assertEq(escrow.MAX_IMPRESSIONS(), 100);
+        assertFalse(publisherRegistry.isAvailablePublisher(publisherId));
+    }
+
+    function testClosingDealMakesPublisherAvailableAgain() public {
+        vm.prank(advertiser);
+        (, address escrowAddress) = dealFactory.createDeal(publisherId, 1_000, 100);
+
+        assertFalse(publisherRegistry.isAvailablePublisher(publisherId));
+
+        vm.prank(advertiser);
+        DealEscrow(payable(escrowAddress)).closeDeal();
+
+        assertTrue(publisherRegistry.isAvailablePublisher(publisherId));
     }
 
     function testCreateDealRequiresRegisteredAdvertiser() public {

@@ -1,85 +1,155 @@
 "use client";
 
+import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { useEffect, useState } from "react";
+import { useBalance } from "wagmi";
 import type { NextPage } from "next";
+import type { PublisherDashboardResponse } from "~~/app/api/publishers/[id]/dashboard/route";
 import { Topbar } from "~~/components/adflow/Topbar";
-
-const PAYMENTS = [
-  { from: "BeanBox Coffee Co.", amount: "+$4.00", batch: "#22 (1K impr.)", time: "2 min ago" },
-  { from: "BrewMaster App", amount: "+$4.00", batch: "#13 (1K impr.)", time: "8 min ago" },
-  { from: "BeanBox Coffee Co.", amount: "+$4.00", batch: "#21 (1K impr.)", time: "29 min ago" },
-  { from: "BeanBox Coffee Co.", amount: "+$4.00", batch: "#20 (1K impr.)", time: "54 min ago" },
-];
+import type { PublisherSessionSummary } from "~~/types/adflow";
+import { notification } from "~~/utils/scaffold-eth";
 
 const PublisherWallet: NextPage = () => {
-  const [amount, setAmount] = useState(142.8);
+  const { primaryWallet } = useDynamicContext();
+  const walletAddress = primaryWallet?.address as `0x${string}` | undefined;
+
+  const { data: balance, isLoading: balanceLoading } = useBalance({ address: walletAddress });
+
+  const [session, setSession] = useState<PublisherSessionSummary | null>(null);
+  const [dashboard, setDashboard] = useState<PublisherDashboardResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const interval = setInterval(() => setAmount(prev => prev + 0.004 * Math.random()), 3000);
-    return () => clearInterval(interval);
+    try {
+      const raw = sessionStorage.getItem("adflow_publisher");
+      if (raw) setSession(JSON.parse(raw) as PublisherSessionSummary);
+    } catch {
+      /* ignore */
+    }
   }, []);
 
-  const whole = Math.floor(amount);
-  const dec = Math.floor((amount - whole) * 100)
-    .toString()
-    .padStart(2, "0");
+  useEffect(() => {
+    if (!session?.id) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    fetch(`/api/publishers/${session.id}/dashboard`)
+      .then(r => r.json())
+      .then((data: PublisherDashboardResponse) => setDashboard(data))
+      .catch(() => notification.error("Could not load wallet data."))
+      .finally(() => setLoading(false));
+  }, [session?.id]);
+
+  const handleCopy = () => {
+    if (!walletAddress) return;
+    navigator.clipboard.writeText(walletAddress).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
+  const truncateAddress = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+
+  const totalRevenue = dashboard?.stats.totalRevenueUsdc ?? "0.00";
+  const escrowPending = dashboard?.stats.escrowPendingUsdc ?? "0.00";
+  const campaigns = dashboard?.campaigns ?? [];
 
   return (
     <div className="min-h-screen bg-base-200">
       <Topbar variant="publisher" activeTab="wallet" />
       <div className="max-w-lg mx-auto px-6 py-8">
+
+        {/* Balance hero */}
         <div className="text-center py-10">
           <p className="text-base-content/50 text-sm m-0">Total Earned</p>
-          <div className="flex items-baseline justify-center gap-1 tabular-nums mt-2">
-            <span className="text-lg text-base-content/50 font-semibold">$</span>
-            <span className="text-6xl font-extrabold text-primary">{whole}</span>
-            <span className="text-3xl text-primary/70">.{dec}</span>
-            <span className="text-lg text-base-content/50 font-semibold ml-1">USDC</span>
-          </div>
-          <div className="inline-flex items-center gap-2 bg-base-100 border border-base-300 px-4 py-2 rounded-full font-mono text-sm text-base-content/50 mt-4">
-            0x7a3f2b01...e4c92d <button className="hover:text-base-content">📋</button>
-          </div>
+          {loading ? (
+            <div className="flex justify-center py-6"><span className="loading loading-spinner loading-lg text-primary" /></div>
+          ) : (
+            <div className="flex items-baseline justify-center gap-1 tabular-nums mt-2">
+              <span className="text-lg text-base-content/50 font-semibold">$</span>
+              <span className="text-6xl font-extrabold text-primary">{totalRevenue.split(".")[0]}</span>
+              <span className="text-3xl text-primary/70">.{totalRevenue.split(".")[1] ?? "00"}</span>
+              <span className="text-lg text-base-content/50 font-semibold ml-1">USDC</span>
+            </div>
+          )}
+
+          {/* Wallet address */}
+          {walletAddress ? (
+            <button
+              className="inline-flex items-center gap-2 bg-base-100 border border-base-300 px-4 py-2 rounded-full font-mono text-sm text-base-content/50 mt-4 hover:border-primary/40 transition-colors"
+              onClick={handleCopy}
+            >
+              {truncateAddress(walletAddress)}
+              <span className="text-xs">{copied ? "✓" : "⎘"}</span>
+            </button>
+          ) : (
+            <div className="mt-4 text-sm text-base-content/40">No wallet connected</div>
+          )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="card bg-base-100 border border-base-300 p-5 text-center">
-            <div className="text-3xl font-bold text-primary">${amount.toFixed(2)}</div>
+        {/* Stats grid */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="card bg-base-100 border border-base-300 p-4 text-center">
+            <div className="text-2xl font-bold text-primary">${totalRevenue}</div>
             <div className="text-xs uppercase tracking-wider text-base-content/40 mt-1">Received</div>
           </div>
-          <div className="card bg-base-100 border border-base-300 p-5 text-center">
-            <div className="text-3xl font-bold text-info">$57.20</div>
-            <div className="text-xs uppercase tracking-wider text-base-content/40 mt-1">Pending in Escrow</div>
+          <div className="card bg-base-100 border border-base-300 p-4 text-center">
+            <div className="text-2xl font-bold text-warning">${escrowPending}</div>
+            <div className="text-xs uppercase tracking-wider text-base-content/40 mt-1">In Escrow</div>
+          </div>
+          <div className="card bg-base-100 border border-base-300 p-4 text-center">
+            <div className="text-2xl font-bold text-base-content">
+              {balanceLoading ? "—" : balance ? `${parseFloat(balance.formatted).toFixed(4)}` : "0"}
+            </div>
+            <div className="text-xs uppercase tracking-wider text-base-content/40 mt-1">
+              {balance?.symbol ?? "ETH"}
+            </div>
           </div>
         </div>
 
+        {/* Campaign revenue table */}
         <div className="card bg-base-100 border border-base-300">
           <div className="card-body">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="card-title">Recent Payments</h2>
-              <span className="badge badge-success">Streaming</span>
+              <h2 className="card-title text-base">Campaign Revenue</h2>
+              <span className="badge badge-success badge-sm">Live</span>
             </div>
-            <div className="overflow-x-auto">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>From</th>
-                    <th>Amount</th>
-                    <th>Batch</th>
-                    <th>Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {PAYMENTS.map((p, i) => (
-                    <tr key={i}>
-                      <td className="text-sm">{p.from}</td>
-                      <td className="text-primary font-semibold">{p.amount}</td>
-                      <td className="text-sm text-base-content/50">{p.batch}</td>
-                      <td className="text-sm text-base-content/50">{p.time}</td>
+            {loading ? (
+              <div className="flex justify-center py-8"><span className="loading loading-spinner text-primary" /></div>
+            ) : campaigns.length === 0 ? (
+              <p className="text-sm text-base-content/40 text-center py-6 m-0">No active campaigns yet.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="table table-sm">
+                  <thead>
+                    <tr>
+                      <th>Advertiser</th>
+                      <th>Revenue</th>
+                      <th>Impressions</th>
+                      <th>Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {campaigns.map(c => (
+                      <tr key={c.id}>
+                        <td className="text-sm font-medium">{c.advertiserName}</td>
+                        <td className="text-primary font-semibold">${c.revenueUsdc}</td>
+                        <td className="text-sm text-base-content/50">
+                          {c.impressionsServed.toLocaleString()} / {c.impressionsTotal.toLocaleString()}
+                        </td>
+                        <td>
+                          <span className={`badge badge-sm ${c.status === "active" ? "badge-success" : "badge-ghost"}`}>
+                            {c.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       </div>
