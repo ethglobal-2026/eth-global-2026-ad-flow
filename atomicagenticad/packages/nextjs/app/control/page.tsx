@@ -14,6 +14,8 @@ type CampaignState = {
   loading: boolean;
 };
 
+type SubmitStatus = "impressions" | "claim" | null;
+
 const ControlPanel: NextPage = () => {
   const publicClient = usePublicClient({ chainId: arcTestnet.id });
   const { writeContractAsync } = useWriteContract();
@@ -22,7 +24,7 @@ const ControlPanel: NextPage = () => {
   const [loadingList, setLoadingList] = useState(true);
   const [onchain, setOnchain] = useState<Record<string, CampaignState>>({});
   const [inputs, setInputs] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState<{ addr: string; status: SubmitStatus }>({ addr: "", status: null });
 
   const loadCampaigns = async () => {
     setLoadingList(true);
@@ -45,7 +47,6 @@ const ControlPanel: NextPage = () => {
     void loadCampaigns();
   }, []);
 
-  // Read confirmedImpressions for all campaigns
   const refreshOnchain = async (list: AdminCampaign[]) => {
     if (!publicClient || list.length === 0) return;
 
@@ -85,6 +86,7 @@ const ControlPanel: NextPage = () => {
   }, [campaigns, publicClient]);
 
   const handleRecord = async (campaign: AdminCampaign) => {
+    if (!publicClient) return;
     const raw = inputs[campaign.escrowAddress]?.trim();
     const additional = Number.parseInt(raw ?? "", 10);
     if (!Number.isInteger(additional) || additional <= 0) {
@@ -92,22 +94,39 @@ const ControlPanel: NextPage = () => {
       return;
     }
 
-    setSubmitting(campaign.escrowAddress);
+    const addr = campaign.escrowAddress as `0x${string}`;
+
     try {
-      await writeContractAsync({
-        address: campaign.escrowAddress as `0x${string}`,
+      // Step 1: record impressions
+      setSubmitting({ addr: campaign.escrowAddress, status: "impressions" });
+      const impHash = await writeContractAsync({
+        address: addr,
         abi: DEAL_ESCROW_WRITE_ABI,
         functionName: "recordConfirmedImpressions",
         args: [BigInt(additional)],
         chainId: arcTestnet.id,
       });
+      await publicClient.waitForTransactionReceipt({ hash: impHash, confirmations: 1 });
       notification.success(`Recorded ${additional.toLocaleString()} impressions.`);
+
+      // Step 2: auto-claim earnings
+      setSubmitting({ addr: campaign.escrowAddress, status: "claim" });
+      const claimHash = await writeContractAsync({
+        address: addr,
+        abi: DEAL_ESCROW_WRITE_ABI,
+        functionName: "releasePayment",
+        chainId: arcTestnet.id,
+      });
+      await publicClient.waitForTransactionReceipt({ hash: claimHash, confirmations: 1 });
+      notification.success("Earnings released to publisher.");
+
       setInputs(prev => ({ ...prev, [campaign.escrowAddress]: "" }));
-      await refreshOnchain([campaign]);
     } catch (err) {
       notification.error(err instanceof Error ? err.message : "Transaction failed.");
     } finally {
-      setSubmitting(null);
+      setSubmitting({ addr: "", status: null });
+      // Refresh after confirmed receipts — data is up to date
+      await refreshOnchain([campaign]);
     }
   };
 
@@ -130,8 +149,8 @@ const ControlPanel: NextPage = () => {
         <div className="alert alert-warning mb-6 text-sm">
           <span>
             Only the <span className="font-mono font-semibold">IMPRESSION_REPORTER</span> address (contract deployer) can
-            call <span className="font-mono">recordConfirmedImpressions</span>. Transactions from other wallets will
-            revert.
+            call <span className="font-mono">recordConfirmedImpressions</span>. Recording impressions will automatically
+            trigger a <span className="font-mono">releasePayment</span> on the same deal.
           </span>
         </div>
 
@@ -154,7 +173,12 @@ const ControlPanel: NextPage = () => {
               const pct = c.targetImpressions > 0
                 ? Math.min(100, (Number(confirmed) / c.targetImpressions) * 100)
                 : 0;
-              const isSubmitting = submitting === c.escrowAddress;
+              const isActive = submitting.addr === c.escrowAddress && submitting.status !== null;
+              const statusLabel = submitting.status === "impressions"
+                ? "Recording impressions…"
+                : submitting.status === "claim"
+                  ? "Releasing payment…"
+                  : null;
 
               return (
                 <div key={c.id} className="card bg-base-100 border border-base-300">
@@ -187,27 +211,34 @@ const ControlPanel: NextPage = () => {
                       <div className="text-sm text-base-content/50 shrink-0">
                         {remaining.toLocaleString()} remaining
                       </div>
-                      <div className="flex items-center gap-2 ml-auto">
-                        <input
-                          type="number"
-                          min={1}
-                          max={remaining}
-                          placeholder="Impressions to record"
-                          className="input input-bordered input-sm bg-base-200 w-52"
-                          value={inputs[c.escrowAddress] ?? ""}
-                          onChange={e =>
-                            setInputs(prev => ({ ...prev, [c.escrowAddress]: e.target.value }))
-                          }
-                          disabled={remaining === 0 || isSubmitting}
-                        />
-                        <button
-                          className="btn btn-primary btn-sm"
-                          disabled={remaining === 0 || isSubmitting}
-                          onClick={() => void handleRecord(c)}
-                        >
-                          {isSubmitting ? <span className="loading loading-spinner loading-xs" /> : "Record"}
-                        </button>
-                      </div>
+                      {isActive ? (
+                        <div className="ml-auto flex items-center gap-2 text-sm text-base-content/60">
+                          <span className="loading loading-spinner loading-xs text-primary" />
+                          {statusLabel}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 ml-auto">
+                          <input
+                            type="number"
+                            min={1}
+                            max={remaining}
+                            placeholder="Impressions to record"
+                            className="input input-bordered input-sm bg-base-200 w-52"
+                            value={inputs[c.escrowAddress] ?? ""}
+                            onChange={e =>
+                              setInputs(prev => ({ ...prev, [c.escrowAddress]: e.target.value }))
+                            }
+                            disabled={remaining === 0}
+                          />
+                          <button
+                            className="btn btn-primary btn-sm"
+                            disabled={remaining === 0}
+                            onClick={() => void handleRecord(c)}
+                          >
+                            Record & Release
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     {remaining === 0 && (

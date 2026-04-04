@@ -4,12 +4,12 @@ import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { useEffect, useState } from "react";
 import { formatUnits } from "viem";
 import { arcTestnet } from "viem/chains";
-import { useBalance, usePublicClient, useWriteContract } from "wagmi";
+import { useBalance, usePublicClient } from "wagmi";
 import type { NextPage } from "next";
 import type { PublisherDashboardResponse } from "~~/app/api/publishers/[id]/dashboard/route";
 import { Topbar } from "~~/components/adflow/Topbar";
 import type { PublisherSessionSummary } from "~~/types/adflow";
-import { DEAL_ESCROW_READ_ABI, DEAL_ESCROW_WRITE_ABI } from "~~/utils/adflow/dealEscrowAbi";
+import { DEAL_ESCROW_READ_ABI } from "~~/utils/adflow/dealEscrowAbi";
 import { notification } from "~~/utils/scaffold-eth";
 
 type EscrowSnapshot = {
@@ -26,8 +26,6 @@ const PublisherWallet: NextPage = () => {
   const { primaryWallet } = useDynamicContext();
   const walletAddress = primaryWallet?.address as `0x${string}` | undefined;
   const publicClient = usePublicClient({ chainId: arcTestnet.id });
-  const { writeContractAsync } = useWriteContract();
-
   const { data: balance, isLoading: balanceLoading } = useBalance({ address: walletAddress });
 
   const [session, setSession] = useState<PublisherSessionSummary | null>(null);
@@ -35,7 +33,6 @@ const PublisherWallet: NextPage = () => {
   const [loading, setLoading] = useState(true);
   const [escrows, setEscrows] = useState<Record<string, EscrowSnapshot>>({});
   const [escrowsLoading, setEscrowsLoading] = useState(false);
-  const [claiming, setClaiming] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -102,25 +99,6 @@ const PublisherWallet: NextPage = () => {
     void refreshEscrows();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dashboard, publicClient]);
-
-  const handleClaim = async (escrowAddress: string) => {
-    setClaiming(escrowAddress);
-    try {
-      await writeContractAsync({
-        address: escrowAddress as `0x${string}`,
-        abi: DEAL_ESCROW_WRITE_ABI,
-        functionName: "releasePayment",
-        chainId: arcTestnet.id,
-      });
-      notification.success("Funds claimed!");
-      // Refresh escrow snapshots after claim
-      await refreshEscrows();
-    } catch (err) {
-      notification.error(err instanceof Error ? err.message : "Claim failed.");
-    } finally {
-      setClaiming(null);
-    }
-  };
 
   const handleCopy = () => {
     if (!walletAddress) return;
@@ -229,13 +207,11 @@ const PublisherWallet: NextPage = () => {
                       <th>Advertiser</th>
                       <th>Received</th>
                       <th>Remaining</th>
-                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
                     {campaigns.map(c => {
                       const snap = c.escrowAddress ? escrows[c.escrowAddress] : undefined;
-                      const isClaiming = claiming === c.escrowAddress;
 
                       return (
                         <tr key={c.id}>
@@ -245,17 +221,6 @@ const PublisherWallet: NextPage = () => {
                           </td>
                           <td className="text-warning font-semibold">
                             {snap ? `$${fmt(snap.remaining, 4)}` : "—"}
-                          </td>
-                          <td>
-                            {c.escrowAddress && snap && snap.remaining > 0n ? (
-                              <button
-                                className="btn btn-primary btn-xs"
-                                disabled={isClaiming}
-                                onClick={() => void handleClaim(c.escrowAddress!)}
-                              >
-                                {isClaiming ? <span className="loading loading-spinner loading-xs" /> : "Claim"}
-                              </button>
-                            ) : null}
                           </td>
                         </tr>
                       );
