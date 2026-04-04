@@ -58,9 +58,15 @@ function routeError(err: unknown): { status: number; error: string } {
   return { status: 500, error: "Internal server error" };
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     loadNextAppEnvLocalFallback();
+    const email = request.nextUrl.searchParams.get("email");
+    if (email) {
+      const advertiser = await getAdvertiserByEmail(email);
+      if (!advertiser) return NextResponse.json(null, { status: 404 });
+      return NextResponse.json(advertiser);
+    }
     const list = await getAdvertisers();
     return NextResponse.json(list);
   } catch (err) {

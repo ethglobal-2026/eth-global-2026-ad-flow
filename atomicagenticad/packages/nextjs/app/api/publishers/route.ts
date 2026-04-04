@@ -97,9 +97,15 @@ function publisherRouteError(err: unknown): { status: number; error: string } {
   return { status: 500, error: "Internal server error" };
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     loadNextAppEnvLocalFallback();
+    const email = request.nextUrl.searchParams.get("email");
+    if (email) {
+      const publisher = await getPublisherByEmail(email);
+      if (!publisher) return NextResponse.json(null, { status: 404 });
+      return NextResponse.json(publisher);
+    }
     const publishers = await getPublishers();
     return NextResponse.json(publishers);
   } catch (err) {
