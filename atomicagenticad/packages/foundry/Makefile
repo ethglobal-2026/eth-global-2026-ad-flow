@@ -1,4 +1,4 @@
-.PHONY: build deploy generate-abis get-address account chain compile flatten fork format lint test verify
+.PHONY: build deploy generate-abis get-address account chain compile coverage flatten fork format lint test verify
 
 DEPLOY_SCRIPT ?= script/Deploy.s.sol
 
@@ -55,7 +55,9 @@ lint:
 test:
 	forge test
 
+coverage:
+	forge coverage --report lcov
+
 # Verify contracts
 verify:
 	forge script script/VerifyAll.s.sol --ffi --rpc-url $(RPC_URL)
-
