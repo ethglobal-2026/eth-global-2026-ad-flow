@@ -1,5 +1,6 @@
 import type { InferSelectModel } from "drizzle-orm";
 import type {
+  advertiserCampaignDeals,
   advertiserCampaigns,
   advertisers,
   publisherCampaigns,
@@ -16,6 +17,9 @@ export type Advertiser = InferSelectModel<typeof advertisers>;
 
 /** Row shape for `advertiser_campaigns`. */
 export type AdvertiserCampaign = InferSelectModel<typeof advertiserCampaigns>;
+
+/** Row shape for `advertiser_campaign_deals` (on-chain deal + escrow rows per campaign). */
+export type AdvertiserCampaignDeal = InferSelectModel<typeof advertiserCampaignDeals>;
 
 /** After `/advertiser/onboard` — who is signed in as an advertiser. */
 export type AdvertiserSessionSummary = Pick<Advertiser, "id" | "email" | "walletAddress" | "displayName">;

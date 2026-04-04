@@ -70,3 +70,21 @@ export const advertiserCampaigns = pgTable("advertiser_campaigns", {
     .default(sql`'[]'::jsonb`),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+export const advertiserCampaignDeals = pgTable("advertiser_campaign_deals", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  campaignId: uuid("campaign_id")
+    .notNull()
+    .references(() => advertiserCampaigns.id, { onDelete: "cascade" }),
+  publisherId: uuid("publisher_id")
+    .notNull()
+    .references(() => publishers.id, { onDelete: "cascade" }),
+  onchainPublisherId: varchar("onchain_publisher_id", { length: 78 }).notNull(),
+  onchainDealId: varchar("onchain_deal_id", { length: 78 }).notNull().unique(),
+  escrowAddress: varchar("escrow_address", { length: 42 }).notNull().unique(),
+  txHash: varchar("tx_hash", { length: 66 }).notNull().unique(),
+  fundedAmountWei: varchar("funded_amount_wei", { length: 78 }).notNull(),
+  maxImpressions: integer("max_impressions").notNull(),
+  status: varchar("status", { length: 32 }).notNull().default("funded"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
