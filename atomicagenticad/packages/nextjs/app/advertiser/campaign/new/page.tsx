@@ -575,7 +575,7 @@ const NewAdvertiserCampaign: NextPage = () => {
                         }
 
                         notification.success("Campaign created and escrow funded.");
-                        router.push("/advertiser/campaign");
+                        router.push(`/advertiser/campaign/${created.id}`);
                       } catch (error) {
                         notification.error(getParsedError(error));
                         setSubmitting(false);

@@ -4,21 +4,32 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { NextPage } from "next";
+import { formatUnits } from "viem";
+import { arcTestnet } from "viem/chains";
+import { usePublicClient } from "wagmi";
 import type { AdvertiserCampaignsListResponse } from "~~/app/api/advertisers/[id]/campaigns/route";
 import { Topbar } from "~~/components/adflow/Topbar";
 import type {
   Advertiser,
-  AdvertiserCampaign,
-  AdvertiserCampaignSessionSummary,
   AdvertiserSessionSummary,
 } from "~~/types/adflow";
+import { DEAL_ESCROW_READ_ABI } from "~~/utils/adflow/dealEscrowAbi";
 import { notification } from "~~/utils/scaffold-eth";
+
+type CampaignChainStats = {
+  confirmedImpressions: number;
+  maxImpressions: number;
+  totalPaid: number;
+  closed: boolean;
+};
 
 const AdvertiserDashboard: NextPage = () => {
   const router = useRouter();
+  const publicClient = usePublicClient({ chainId: arcTestnet.id });
   const [sessionAdvertiser, setSessionAdvertiser] = useState<AdvertiserSessionSummary | null>(null);
   const [profile, setProfile] = useState<Advertiser | null>(null);
   const [campaigns, setCampaigns] = useState<AdvertiserCampaignsListResponse>([]);
+  const [chainStats, setChainStats] = useState<Record<string, CampaignChainStats>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -83,17 +94,60 @@ const AdvertiserDashboard: NextPage = () => {
     void loadData();
   }, [loadData]);
 
-  const openDiscoveryForCampaign = (c: AdvertiserCampaign) => {
-    const summary: AdvertiserCampaignSessionSummary = {
-      id: c.id,
-      productDescription: c.productDescription,
-      budgetUsdc: c.budgetUsdc,
-      targetImpressions: c.targetImpressions,
-      targetAudience: c.targetAudience,
+  useEffect(() => {
+    const loadOnchainStats = async () => {
+      if (!publicClient || campaigns.length === 0) {
+        setChainStats({});
+        return;
+      }
+
+      const nextEntries = await Promise.all(
+        campaigns.map(async campaign => {
+          if (!campaign.escrowAddress) return null;
+          try {
+            const [confirmedImpressions, maxImpressions, totalPaid, closed] = await Promise.all([
+              publicClient.readContract({
+                address: campaign.escrowAddress as `0x${string}`,
+                abi: DEAL_ESCROW_READ_ABI,
+                functionName: "confirmedImpressions",
+              }),
+              publicClient.readContract({
+                address: campaign.escrowAddress as `0x${string}`,
+                abi: DEAL_ESCROW_READ_ABI,
+                functionName: "MAX_IMPRESSIONS",
+              }),
+              publicClient.readContract({
+                address: campaign.escrowAddress as `0x${string}`,
+                abi: DEAL_ESCROW_READ_ABI,
+                functionName: "totalPaid",
+              }),
+              publicClient.readContract({
+                address: campaign.escrowAddress as `0x${string}`,
+                abi: DEAL_ESCROW_READ_ABI,
+                functionName: "closed",
+              }),
+            ]);
+            return [
+              campaign.id,
+              {
+                confirmedImpressions: Number(confirmedImpressions),
+                maxImpressions: Number(maxImpressions),
+                totalPaid: Number.parseFloat(formatUnits(totalPaid, 18)),
+                closed,
+              } satisfies CampaignChainStats,
+            ] as const;
+          } catch {
+            return null;
+          }
+        }),
+      );
+
+      const next = Object.fromEntries(nextEntries.filter(Boolean) as Array<readonly [string, CampaignChainStats]>);
+      setChainStats(next);
     };
-    sessionStorage.setItem("adflow_advertiser_campaign", JSON.stringify(summary));
-    router.push("/advertiser/discovery");
-  };
+
+    void loadOnchainStats();
+  }, [campaigns, publicClient]);
 
   return (
     <div className="min-h-screen bg-base-200">
@@ -119,9 +173,6 @@ const AdvertiserDashboard: NextPage = () => {
             ) : null}
             <Link href="/advertiser/campaign/new" className="btn btn-primary btn-sm">
               Launch new campaign
-            </Link>
-            <Link href="/advertiser/discovery" className="btn btn-outline btn-primary btn-sm">
-              Discovery
             </Link>
             <Link href="/advertiser/settings" className="btn btn-ghost btn-sm">
               Settings
@@ -155,8 +206,7 @@ const AdvertiserDashboard: NextPage = () => {
                     </div>
                   ) : campaigns.length === 0 ? (
                     <p className="text-base-content/60 text-sm m-0 py-4">
-                      No campaigns yet. Launch one to define budget, audience, and creative — then run discovery to find
-                      publishers.
+                      No campaigns yet. Launch one to define budget, audience, and creative.
                     </p>
                   ) : (
                     <div className="overflow-x-auto">
@@ -165,29 +215,43 @@ const AdvertiserDashboard: NextPage = () => {
                           <tr>
                             <th>Brief</th>
                             <th>Budget</th>
-                            <th>Target impr.</th>
-                            <th />
+                            <th>Impressions</th>
+                            <th>On-chain</th>
+                            <th className="text-right">Paid</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {campaigns.map(c => (
-                            <tr key={c.id}>
-                              <td className="max-w-[200px]">
-                                <span className="line-clamp-2 text-sm">{c.productDescription}</span>
-                              </td>
-                              <td className="whitespace-nowrap">${c.budgetUsdc} USDC</td>
-                              <td className="whitespace-nowrap">{c.targetImpressions.toLocaleString()}</td>
-                              <td className="text-right">
-                                <button
-                                  type="button"
-                                  className="btn btn-ghost btn-xs"
-                                  onClick={() => openDiscoveryForCampaign(c)}
-                                >
-                                  Find publishers
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
+                          {campaigns.map(c => {
+                            const stats = chainStats[c.id];
+                            return (
+                              <tr
+                                key={c.id}
+                                className="cursor-pointer hover:bg-base-200/40"
+                                onClick={() => {
+                                  router.push(`/advertiser/campaign/${c.id}`);
+                                }}
+                              >
+                                <td className="max-w-[200px]">
+                                  <span className="line-clamp-2 text-sm">{c.productDescription}</span>
+                                </td>
+                                <td className="whitespace-nowrap">${c.budgetUsdc} USDC</td>
+                                <td className="whitespace-nowrap">
+                                  {(stats?.confirmedImpressions ?? 0).toLocaleString()} /{" "}
+                                  {c.targetImpressions.toLocaleString()}
+                                </td>
+                                <td>
+                                  {c.onchainDealId ? (
+                                    <span className={`badge ${stats?.closed ? "badge-ghost" : "badge-success"}`}>
+                                      {stats?.closed ? "Closed" : "Deal #" + c.onchainDealId}
+                                    </span>
+                                  ) : (
+                                    <span className="badge badge-ghost">Off-chain</span>
+                                  )}
+                                </td>
+                                <td className="text-right tabular-nums">${(stats?.totalPaid ?? 0).toFixed(4)}</td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -233,13 +297,10 @@ const AdvertiserDashboard: NextPage = () => {
 
             <div className="card bg-base-100 border border-base-300 border-dashed">
               <div className="card-body py-6">
-                <h3 className="font-semibold text-base-content m-0">Live campaign view</h3>
+                <h3 className="font-semibold text-base-content m-0">Tip</h3>
                 <p className="text-sm text-base-content/60 m-0 mt-1">
-                  Demo dashboard for a running deal (impressions, escrow) — useful once a publisher is booked.
+                  Open any campaign row to view live on-chain stats for its escrow.
                 </p>
-                <Link href="/advertiser/campaign" className="btn btn-sm btn-outline mt-3 w-fit">
-                  Open campaign demo
-                </Link>
               </div>
             </div>
           </>

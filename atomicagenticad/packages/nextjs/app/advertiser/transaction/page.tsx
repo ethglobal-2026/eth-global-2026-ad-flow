@@ -343,7 +343,9 @@ const Transaction: NextPage = () => {
             <button
               type="button"
               className="btn btn-primary btn-lg"
-              onClick={() => router.push("/advertiser/campaign")}
+              onClick={() =>
+                router.push(checkout?.campaignId ? `/advertiser/campaign/${checkout.campaignId}` : "/advertiser/dashboard")
+              }
             >
               View campaign dashboard
             </button>

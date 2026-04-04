@@ -90,12 +90,6 @@ export const Topbar = ({ variant, activeTab, onboardingLabel }: TopbarProps) => 
               New campaign
             </button>
             <button
-              className={`btn btn-ghost btn-sm ${activeTab === "campaigns" ? "bg-base-300" : ""}`}
-              onClick={() => router.push("/advertiser/campaign")}
-            >
-              Live campaign
-            </button>
-            <button
               className={`btn btn-ghost btn-sm ${activeTab === "settings" ? "bg-base-300" : ""}`}
               onClick={() => router.push("/advertiser/settings")}
             >
