@@ -1,3 +1,13 @@
+export const DEAL_ESCROW_WRITE_ABI = [
+  {
+    type: "function",
+    name: "releasePayment",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [{ name: "amountReleased", type: "uint256" }],
+  },
+] as const;
+
 export const DEAL_ESCROW_READ_ABI = [
   {
     type: "function",
