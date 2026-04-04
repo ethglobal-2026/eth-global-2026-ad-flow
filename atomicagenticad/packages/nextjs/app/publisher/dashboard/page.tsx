@@ -4,17 +4,23 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { NextPage } from "next";
+import { formatUnits } from "viem";
+import { arcTestnet } from "viem/chains";
+import { usePublicClient } from "wagmi";
 import type { PublisherDashboardResponse } from "~~/app/api/publishers/[id]/dashboard/route";
 import { Topbar } from "~~/components/adflow/Topbar";
 import type { PublisherSessionSummary } from "~~/types/adflow";
+import { DEAL_ESCROW_READ_ABI } from "~~/utils/adflow/dealEscrowAbi";
 import { notification } from "~~/utils/scaffold-eth";
 
 function PublisherDashboardInner() {
   const searchParams = useSearchParams();
+  const publicClient = usePublicClient({ chainId: arcTestnet.id });
   const [sessionPublisher, setSessionPublisher] = useState<PublisherSessionSummary | null>(null);
   const [dashboard, setDashboard] = useState<PublisherDashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [escrowTotals, setEscrowTotals] = useState<{ remaining: bigint; claimed: bigint } | null>(null);
 
   const publisherId = useMemo(() => {
     const q = searchParams.get("id")?.trim();
@@ -70,6 +76,36 @@ function PublisherDashboardInner() {
   useEffect(() => {
     void loadDashboard();
   }, [loadDashboard]);
+
+  useEffect(() => {
+    if (!dashboard || !publicClient) return;
+    const funded = dashboard.campaigns.filter(c => c.escrowAddress && c.fundedAmountWei);
+    if (funded.length === 0) {
+      setEscrowTotals({ remaining: 0n, claimed: 0n });
+      return;
+    }
+    Promise.all(
+      funded.map(async c => {
+        const totalPaid = await publicClient.readContract({
+          address: c.escrowAddress as `0x${string}`,
+          abi: DEAL_ESCROW_READ_ABI,
+          functionName: "totalPaid",
+        });
+        const fundedAmount = BigInt(c.fundedAmountWei!);
+        return { totalPaid, remaining: fundedAmount > totalPaid ? fundedAmount - totalPaid : 0n };
+      }),
+    )
+      .then(results => {
+        const totals = results.reduce(
+          (acc, r) => ({ remaining: acc.remaining + r.remaining, claimed: acc.claimed + r.totalPaid }),
+          { remaining: 0n, claimed: 0n },
+        );
+        setEscrowTotals(totals);
+      })
+      .catch(() => setEscrowTotals(null));
+  }, [dashboard, publicClient]);
+
+  const fmtEth = (wei: bigint) => `$${parseFloat(formatUnits(wei, 18)).toFixed(4)}`;
 
   const publisher = dashboard?.publisher;
 
@@ -163,25 +199,32 @@ function PublisherDashboardInner() {
 
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-              {[
-                {
-                  value: String(dashboard.stats.activeCampaignCount),
-                  label: "Active campaigns",
-                },
-                {
-                  value: `$${dashboard.stats.floorPricePer1kUsd}`,
-                  label: "Price / 1K impressions",
-                },
-                {
-                  value: `$${dashboard.stats.escrowPendingUsdc}`,
-                  label: "Est. value in escrow",
-                },
-              ].map(s => (
-                <div key={s.label} className="card bg-base-100 border border-base-300 p-5 text-center">
-                  <div className="text-2xl md:text-3xl font-bold text-base-content">{s.value}</div>
-                  <div className="text-xs uppercase tracking-wider text-base-content/40 mt-1">{s.label}</div>
+              <div className="card bg-base-100 border border-base-300 p-5 text-center">
+                <div className="text-2xl md:text-3xl font-bold text-base-content">
+                  {dashboard.stats.activeCampaignCount}
                 </div>
-              ))}
+                <div className="text-xs uppercase tracking-wider text-base-content/40 mt-1">Active campaigns</div>
+              </div>
+              <div className="card bg-base-100 border border-base-300 p-5 text-center">
+                <div className="text-2xl md:text-3xl font-bold text-warning">
+                  {escrowTotals === null ? (
+                    <span className="loading loading-dots loading-sm" />
+                  ) : (
+                    fmtEth(escrowTotals.remaining)
+                  )}
+                </div>
+                <div className="text-xs uppercase tracking-wider text-base-content/40 mt-1">In Escrow</div>
+              </div>
+              <div className="card bg-base-100 border border-base-300 p-5 text-center">
+                <div className="text-2xl md:text-3xl font-bold text-primary">
+                  {escrowTotals === null ? (
+                    <span className="loading loading-dots loading-sm" />
+                  ) : (
+                    fmtEth(escrowTotals.claimed)
+                  )}
+                </div>
+                <div className="text-xs uppercase tracking-wider text-base-content/40 mt-1">Claimed</div>
+              </div>
             </div>
 
             {/* Campaigns */}

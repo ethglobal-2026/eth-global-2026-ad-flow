@@ -195,10 +195,10 @@ const PublisherWallet: NextPage = () => {
             <div className="text-xs uppercase tracking-wider text-base-content/40 mt-1">Remaining</div>
           </div>
           <div className="card bg-base-100 border border-base-300 p-4 text-center">
-            <div className="text-xl font-bold text-base-content">
-              {escrowsLoading ? <span className="loading loading-dots loading-sm" /> : `$${fmt(totals.inEscrow, 4)}`}
+            <div className="text-xl font-bold text-primary">
+              {escrowsLoading ? <span className="loading loading-dots loading-sm" /> : `$${fmt(totals.received, 4)}`}
             </div>
-            <div className="text-xs uppercase tracking-wider text-base-content/40 mt-1">In Escrow</div>
+            <div className="text-xs uppercase tracking-wider text-base-content/40 mt-1">Claimed</div>
           </div>
           <div className="card bg-base-100 border border-base-300 p-4 text-center">
             <div className="text-xl font-bold text-base-content">
