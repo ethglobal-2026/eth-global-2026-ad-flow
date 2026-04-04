@@ -191,7 +191,7 @@ const Transaction: NextPage = () => {
             <div className="card-body">
               <h1 className="card-title">No active checkout</h1>
               <p className="text-base-content/60 text-sm m-0">
-                Create a campaign, choose publishers, and confirm — you&apos;ll land here to fund escrow.
+                Create a campaign, choose publishers, and confirm. You&apos;ll land here to fund escrow.
               </p>
               <button
                 type="button"
@@ -289,7 +289,7 @@ const Transaction: NextPage = () => {
               disabled={creatingDeals}
               onClick={() => setModalOpen(true)}
             >
-              Fund escrow — ${amountDisplay} USDC
+              Fund escrow ${amountDisplay} USDC
             </button>
             <button
               type="button"

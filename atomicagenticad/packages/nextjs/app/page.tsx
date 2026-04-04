@@ -72,7 +72,7 @@ const FEATURES = [
     gradient: "from-blue-50 to-indigo-50",
     ring: "bg-blue-100",
     title: "Agentic Matching",
-    desc: "AI agents discover and verify the perfect publisher-advertiser fit — no manual browsing, no guesswork.",
+    desc: "AI agents discover and verify the perfect publisher-advertiser fit. No manual browsing, no guesswork.",
   },
   {
     step: "02",
@@ -80,7 +80,7 @@ const FEATURES = [
     gradient: "from-sky-50 to-blue-50",
     ring: "bg-sky-100",
     title: "Streaming Payments",
-    desc: "USDC flows per 1,000 impressions via on-chain escrow — no invoicing, no 30-day waits.",
+    desc: "USDC flows per 1,000 impressions via on-chain escrow. No invoicing, no 30-day waits.",
   },
   {
     step: "03",
@@ -140,7 +140,7 @@ const Landing: NextPage = () => {
           </h1>
 
           <p className="text-lg md:text-xl text-base-content/60 max-w-xl mx-auto leading-relaxed mb-10">
-            Agent-powered publisher discovery, blockchain-secured payments. Connect with the right audience — no
+            Agent-powered publisher discovery, blockchain-secured payments. Connect with the right audience, no
             gatekeepers, no 30% commissions.
           </p>
 

@@ -53,7 +53,7 @@ const NewAdvertiserCampaign: NextPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [advertiser, setAdvertiser] = useState<AdvertiserSessionSummary | null>(null);
   const [step, setStep] = useState(1);
-  const [product, setProduct] = useState("BeanBox — premium coffee subscription");
+  const [product, setProduct] = useState("BeanBox, premium coffee subscription");
   const [audience, setAudience] = useState(
     "Find me English-language websites specializing in Arabic coffee, specialty brewing, or coffee culture. Target audience: coffee enthusiasts aged 25-45.",
   );
@@ -78,7 +78,7 @@ const NewAdvertiserCampaign: NextPage = () => {
       if (!parsed?.id) throw new Error("bad");
       setAdvertiser(parsed);
     } catch {
-      notification.error("Session expired — sign in again.");
+      notification.error("Session expired. Sign in again.");
       router.replace("/advertiser/onboard");
     }
   }, [router]);
@@ -167,7 +167,7 @@ const NewAdvertiserCampaign: NextPage = () => {
             <Stepper steps={STEPS} current={step} />
             <h2 className="card-title text-2xl mt-2">New campaign</h2>
             <p className="text-base-content/60 text-sm mb-4 m-0">
-              Logged in as <span className="font-medium text-base-content">{advertiser.displayName}</span> — brief, pick
+              Logged in as <span className="font-medium text-base-content">{advertiser.displayName}</span>. Brief, pick
               sites, confirm, and fund escrow.
             </p>
 

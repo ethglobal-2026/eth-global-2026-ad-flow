@@ -132,7 +132,7 @@ const AdvertiserOnboard: NextPage = () => {
                       Continue with Google
                     </button>
                     <p className="text-xs text-center text-base-content/40 m-0">
-                      Powered by Dynamic — no crypto wallet needed
+                      Powered by Dynamic, no crypto wallet needed
                     </p>
                   </>
                 )}
@@ -155,7 +155,7 @@ const AdvertiserOnboard: NextPage = () => {
                     readOnly
                     disabled
                   />
-                  <p className="fieldset-label">Auto-assigned by Dynamic — linked to your Google account</p>
+                  <p className="fieldset-label">Auto-assigned by Dynamic, linked to your Google account</p>
                 </fieldset>
                 <fieldset className="fieldset">
                   <legend className="fieldset-legend">Your name</legend>
@@ -182,7 +182,7 @@ const AdvertiserOnboard: NextPage = () => {
                   <textarea
                     className="textarea textarea-bordered w-full bg-base-200"
                     rows={3}
-                    placeholder="What you advertise, industries, or goals — helps publishers understand who you are."
+                    placeholder="What you advertise, industries, or goals. Helps publishers understand who you are."
                     value={about}
                     onChange={e => setAbout(e.target.value)}
                   />
@@ -270,7 +270,7 @@ const AdvertiserOnboard: NextPage = () => {
                           displayName: created.displayName,
                         };
                         sessionStorage.setItem("adflow_advertiser", JSON.stringify(summary));
-                        notification.success("Account ready — open your dashboard to launch campaigns.");
+                        notification.success("Account ready. Open your dashboard to launch campaigns.");
                         router.push("/advertiser/dashboard");
                       } catch (error) {
                         notification.error(getParsedError(error));

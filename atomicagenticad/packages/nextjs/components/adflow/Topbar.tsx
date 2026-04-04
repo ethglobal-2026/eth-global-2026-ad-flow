@@ -19,9 +19,9 @@ export const Topbar = ({ variant, activeTab, onboardingLabel }: TopbarProps) => 
     <div className="sticky top-0 z-50 flex items-center justify-between h-16 px-6 bg-base-100/80 backdrop-blur-md border-b border-base-300">
       <button className="btn btn-ghost px-2 flex items-center gap-2" onClick={() => router.push("/")}>
         <span className="flex items-center justify-center w-7 h-7 rounded bg-primary text-primary-content text-xs font-black tracking-tighter">
-          AAA
+          AF
         </span>
-        <span className="font-bold text-base-content text-base tracking-tight">Triple A</span>
+        <span className="font-bold text-base-content text-base tracking-tight">AdFlow</span>
       </button>
 
       {variant === "landing" && (

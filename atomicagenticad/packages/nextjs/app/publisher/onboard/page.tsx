@@ -231,7 +231,7 @@ const PublisherOnboard: NextPage = () => {
                       Continue with Google
                     </button>
                     <p className="text-xs text-center text-base-content/40 m-0">
-                      Powered by Dynamic — no crypto wallet needed
+                      Powered by Dynamic, no crypto wallet needed
                     </p>
                   </>
                 )}
@@ -308,7 +308,7 @@ const PublisherOnboard: NextPage = () => {
                           setStep(3);
                         }}
                       >
-                        Looks Good — Continue
+                        Looks Good, Continue
                       </button>
                     </div>
                   </>
@@ -394,7 +394,7 @@ const PublisherOnboard: NextPage = () => {
                       readOnly
                       disabled
                     />
-                    <p className="fieldset-label">Auto-assigned by Dynamic — linked to your Google account</p>
+                    <p className="fieldset-label">Auto-assigned by Dynamic, linked to your Google account</p>
                   </fieldset>
                 )}
                 <button
