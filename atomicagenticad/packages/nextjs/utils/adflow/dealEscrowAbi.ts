@@ -6,6 +6,13 @@ export const DEAL_ESCROW_WRITE_ABI = [
     inputs: [],
     outputs: [{ name: "amountReleased", type: "uint256" }],
   },
+  {
+    type: "function",
+    name: "recordConfirmedImpressions",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "additionalImpressions", type: "uint256" }],
+    outputs: [],
+  },
 ] as const;
 
 export const DEAL_ESCROW_READ_ABI = [

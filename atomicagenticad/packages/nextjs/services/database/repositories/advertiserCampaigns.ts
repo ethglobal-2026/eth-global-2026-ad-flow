@@ -1,7 +1,7 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNotNull } from "drizzle-orm";
 import type { InferInsertModel } from "drizzle-orm";
 import { db } from "~~/services/database/config/postgresClient";
-import { advertiserCampaigns, advertisers } from "~~/services/database/config/schema";
+import { advertiserCampaigns, advertisers, publishers } from "~~/services/database/config/schema";
 import { useInMemoryAdvertisers } from "~~/services/database/repositories/advertisersBackend";
 import * as memory from "~~/services/database/repositories/advertiserCampaignsMemory";
 import * as advertisersMemory from "~~/services/database/repositories/advertisersMemory";
@@ -65,6 +65,32 @@ export async function getAdvertiserCampaignsByPublisherId(publisherId: string) {
     .orderBy(desc(advertiserCampaigns.createdAt));
 
   return rows.map(r => ({ ...r.campaign, advertiserName: r.advertiserName }));
+}
+
+export async function getAllFundedCampaigns() {
+  if (useInMemoryAdvertisers()) {
+    // In-memory: filter campaigns with escrowAddress from all advertisers
+    // (memory store is flat, no joins needed for basic display)
+    return [] as Array<AdvertiserCampaign & { advertiserName: string; publisherName: string | null }>;
+  }
+
+  const rows = await db
+    .select({
+      campaign: advertiserCampaigns,
+      advertiserName: advertisers.displayName,
+      publisherName: publishers.name,
+    })
+    .from(advertiserCampaigns)
+    .innerJoin(advertisers, eq(advertiserCampaigns.advertiserId, advertisers.id))
+    .leftJoin(publishers, eq(advertiserCampaigns.selectedPublisherId, publishers.id))
+    .where(isNotNull(advertiserCampaigns.escrowAddress))
+    .orderBy(desc(advertiserCampaigns.createdAt));
+
+  return rows.map(r => ({
+    ...r.campaign,
+    advertiserName: r.advertiserName,
+    publisherName: r.publisherName ?? null,
+  }));
 }
 
 export async function updateAdvertiserCampaignOnchainData(
