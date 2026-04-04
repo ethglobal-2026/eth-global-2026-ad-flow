@@ -160,8 +160,10 @@ Hold the advertiser’s funds and pay the publisher as impressions are confirmed
 - `uint256 pricePerImpression`
 - `uint256 totalBudget`
 - `uint256 maxImpressions`
+- `uint256 fundedAmount`
 - `uint256 confirmedImpressions`
 - `uint256 totalPaid`
+- `uint256 totalRefunded`
 - `bool closed`
 
 ### Core functions
@@ -176,13 +178,16 @@ Hold the advertiser’s funds and pay the publisher as impressions are confirmed
 
 - Earned amount = `confirmedImpressions * pricePerImpression`
 - Claimable amount = `earned amount - totalPaid`
+- Payable amount is capped by `fundedAmount`
+- Publisher payments are pulled via `releasePayment()` instead of being pushed during `closeDeal()`
 - The escrow must never pay above the funded amount.
 
 ### Rules
 
 - The advertiser funds the contract.
-- The publisher receives payments from the contract.
+- The publisher pulls payments from the contract.
 - In v1, funding and payout use the native token instead of an ERC-20.
+- In v1, impression confirmations are recorded by the advertiser until Chainlink CRE is wired in.
 - Impression confirmation should not come from arbitrary users.
 
 ## Step 5 - Chainlink CRE Integration

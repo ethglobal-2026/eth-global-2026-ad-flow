@@ -41,12 +41,12 @@ contract DealFactoryTest is Test {
         assertEq(dealFactory.getDealEscrow(dealId), escrowAddress);
         assertEq(dealFactory.escrowByDealId(dealId), escrowAddress);
 
-        DealEscrow escrow = DealEscrow(escrowAddress);
-        assertEq(escrow.advertiser(), advertiser);
-        assertEq(escrow.publisher(), publisher);
-        assertEq(escrow.pricePerImpression(), 10);
-        assertEq(escrow.totalBudget(), 1_000);
-        assertEq(escrow.maxImpressions(), 100);
+        DealEscrow escrow = DealEscrow(payable(escrowAddress));
+        assertEq(escrow.ADVERTISER(), advertiser);
+        assertEq(escrow.PUBLISHER(), publisher);
+        assertEq(escrow.PRICE_PER_IMPRESSION(), 10);
+        assertEq(escrow.TOTAL_BUDGET(), 1_000);
+        assertEq(escrow.MAX_IMPRESSIONS(), 100);
     }
 
     function testCreateDealRequiresRegisteredAdvertiser() public {
