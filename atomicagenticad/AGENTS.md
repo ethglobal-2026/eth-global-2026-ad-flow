@@ -288,6 +288,37 @@ There is **no separate backend server**. All server-side logic lives as Next.js 
 
 `yarn start` runs everything — frontend and API routes together on `localhost:3000`. No second terminal needed.
 
+## Database
+
+The app uses **PostgreSQL** with **Drizzle ORM** in the `packages/nextjs` package.
+
+### Stack
+
+- Database connection is provided through a single `POSTGRES_URL` environment variable
+- Drizzle config lives at `packages/nextjs/drizzle.config.ts`
+- Database schema lives under `packages/nextjs/services/database/config/`
+- Repository functions live under `packages/nextjs/services/database/repositories/`
+- SQL migrations live under `packages/nextjs/services/database/migrations/`
+
+### Conventions
+
+- Use the same `POSTGRES_URL` pattern for local development and production
+- Do not add Docker-specific database setup unless explicitly requested
+- Do not hardcode database credentials or connection strings in source files
+- Keep database access server-side only: Route Handlers, Server Components, Server Actions, or scripts
+- Prefer adding repository functions instead of querying Drizzle tables directly from many call sites
+- Treat the current schema and seed data as provisional scaffolding unless product requirements specify otherwise
+
+### Drizzle Workflow
+
+```bash
+yarn drizzle-kit generate
+yarn db:seed
+yarn db:wipe
+```
+
+If `drizzle-kit` commands need a connection string, provide `POSTGRES_URL` in the shell environment or in local deployment environment configuration.
+
 ### Creating a New API Route
 
 ```
@@ -337,7 +368,7 @@ async function handle(request: NextRequest) {
 | Route | Method | Purpose |
 |---|---|---|
 | `/api/analyze-site` | `POST` | Analyzes a publisher's website using Claude. Body: `{ url: string }`. Returns `SiteAnalysis`. |
-| `/api/publishers` | `GET`, `POST` | Lists publishers or creates a publisher record in Postgres. |
+| `/api/publishers` | `GET`, `POST` | Temporary database-backed route used to validate the Drizzle/Postgres integration. Do not treat its current payload shape as final product schema. |
 
 ---
 
@@ -558,6 +589,7 @@ cp packages/nextjs/.env.example packages/nextjs/.env.local
 | Variable | Required for | Where to get it |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | All AI/agent features | console.anthropic.com |
+| `POSTGRES_URL` | Database access from Next.js and Drizzle scripts | Your Postgres or Neon project |
 | `NEXT_PUBLIC_ALCHEMY_API_KEY` | Live network RPC | dashboard.alchemyapi.io |
 | `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID` | Wallet connect | cloud.walletconnect.com |
 
