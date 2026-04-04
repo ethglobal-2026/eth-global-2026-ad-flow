@@ -14,10 +14,8 @@ import { notification } from "~~/utils/scaffold-eth";
 
 type EscrowSnapshot = {
   fundedAmount: bigint;
-  confirmedImpressions: bigint;
   totalPaid: bigint;
-  pricePerImpression: bigint;
-  claimable: bigint;
+  remaining: bigint;
 };
 
 function fmt(wei: bigint, decimals = 4): string {
@@ -78,23 +76,17 @@ const PublisherWallet: NextPage = () => {
       const snapshots = await Promise.all(
         funded.map(async c => {
           const addr = c.escrowAddress as `0x${string}`;
-
-          // Static values come from DB — no contract read needed
           const fundedAmount = BigInt(c.fundedAmountWei!);
-          const pricePerImpression =
-            c.impressionsTotal > 0 ? fundedAmount / BigInt(c.impressionsTotal) : 0n;
 
-          // Dynamic values — must read from contract
-          const [confirmedImpressions, totalPaid] = await Promise.all([
-            publicClient.readContract({ address: addr, abi: DEAL_ESCROW_READ_ABI, functionName: "confirmedImpressions" }),
-            publicClient.readContract({ address: addr, abi: DEAL_ESCROW_READ_ABI, functionName: "totalPaid" }),
-          ]);
+          // Only totalPaid is dynamic — single contract read per campaign
+          const totalPaid = await publicClient.readContract({
+            address: addr,
+            abi: DEAL_ESCROW_READ_ABI,
+            functionName: "totalPaid",
+          });
 
-          const earned = confirmedImpressions * pricePerImpression;
-          const payable = earned < fundedAmount ? earned : fundedAmount;
-          const claimable = payable > totalPaid ? payable - totalPaid : 0n;
-
-          return [c.escrowAddress!, { fundedAmount, confirmedImpressions, totalPaid, pricePerImpression, claimable }] as const;
+          const remaining = fundedAmount > totalPaid ? fundedAmount - totalPaid : 0n;
+          return [c.escrowAddress!, { fundedAmount, totalPaid, remaining }] as const;
         }),
       );
 
@@ -146,13 +138,13 @@ const PublisherWallet: NextPage = () => {
   const totals = Object.values(escrows).reduce(
     (acc, s) => ({
       received: acc.received + s.totalPaid,
-      claimable: acc.claimable + s.claimable,
+      remaining: acc.remaining + s.remaining,
       inEscrow: acc.inEscrow + s.fundedAmount,
     }),
-    { received: 0n, claimable: 0n, inEscrow: 0n },
+    { received: 0n, remaining: 0n, inEscrow: 0n },
   );
 
-  const hasClaimable = totals.claimable > 0n;
+  const hasRemaining = totals.remaining > 0n;
 
   return (
     <div className="min-h-screen bg-base-200">
@@ -173,9 +165,9 @@ const PublisherWallet: NextPage = () => {
                 </span>
                 <span className="text-3xl text-primary/70">.{fmt(totals.received, 4).split(".")[1]}</span>
               </div>
-              {hasClaimable && (
+              {hasRemaining && (
                 <p className="text-sm text-warning mt-1 m-0">
-                  ${fmt(totals.claimable, 4)} available to claim
+                  ${fmt(totals.remaining, 4)} remaining in escrow
                 </p>
               )}
             </>
@@ -198,9 +190,9 @@ const PublisherWallet: NextPage = () => {
         <div className="grid grid-cols-3 gap-4 mb-8">
           <div className="card bg-base-100 border border-base-300 p-4 text-center">
             <div className="text-xl font-bold text-warning">
-              {escrowsLoading ? <span className="loading loading-dots loading-sm" /> : `$${fmt(totals.claimable, 4)}`}
+              {escrowsLoading ? <span className="loading loading-dots loading-sm" /> : `$${fmt(totals.remaining, 4)}`}
             </div>
-            <div className="text-xs uppercase tracking-wider text-base-content/40 mt-1">Claimable</div>
+            <div className="text-xs uppercase tracking-wider text-base-content/40 mt-1">Remaining</div>
           </div>
           <div className="card bg-base-100 border border-base-300 p-4 text-center">
             <div className="text-xl font-bold text-base-content">
@@ -235,30 +227,27 @@ const PublisherWallet: NextPage = () => {
                   <thead>
                     <tr>
                       <th>Advertiser</th>
-                      <th>Claimable</th>
-                      <th>Status</th>
+                      <th>Received</th>
+                      <th>Remaining</th>
                       <th></th>
                     </tr>
                   </thead>
                   <tbody>
                     {campaigns.map(c => {
                       const snap = c.escrowAddress ? escrows[c.escrowAddress] : undefined;
-                      const claimable = snap?.claimable ?? 0n;
                       const isClaiming = claiming === c.escrowAddress;
 
                       return (
                         <tr key={c.id}>
                           <td className="text-sm font-medium">{c.advertiserName}</td>
                           <td className="text-primary font-semibold">
-                            {snap ? `$${fmt(claimable, 4)}` : "—"}
+                            {snap ? `$${fmt(snap.totalPaid, 4)}` : "—"}
+                          </td>
+                          <td className="text-warning font-semibold">
+                            {snap ? `$${fmt(snap.remaining, 4)}` : "—"}
                           </td>
                           <td>
-                            <span className={`badge badge-sm ${c.status === "active" ? "badge-success" : "badge-ghost"}`}>
-                              {c.status}
-                            </span>
-                          </td>
-                          <td>
-                            {c.escrowAddress && claimable > 0n ? (
+                            {c.escrowAddress && snap && snap.remaining > 0n ? (
                               <button
                                 className="btn btn-primary btn-xs"
                                 disabled={isClaiming}
