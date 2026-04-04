@@ -49,6 +49,7 @@ export function memoryCreateAdvertiser(values: Insert): Advertiser {
   const row: Advertiser = {
     id: randomUUID(),
     createdAt: now,
+    onchainAdvertiserId: values.onchainAdvertiserId ?? null,
     email: values.email,
     walletAddress: values.walletAddress,
     displayName: values.displayName,

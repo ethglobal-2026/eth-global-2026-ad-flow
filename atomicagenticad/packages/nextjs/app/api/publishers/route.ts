@@ -18,6 +18,8 @@ export type CreatePublisherRequest = {
   siteUrl: string;
   category: string;
   qualityScore: number;
+  onchainPublisherId?: string;
+  pricePerImpressionWei?: string;
   floorPricePer1kUsd: string;
   adFormat: string;
   blockedCategories: string[];
@@ -31,6 +33,7 @@ export type CreatePublisherRequest = {
 };
 
 const ETH_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
+const UINT256_DECIMAL_RE = /^(0|[1-9]\d{0,77})$/;
 
 function isStringArray(v: unknown): v is string[] {
   return Array.isArray(v) && v.every(item => typeof item === "string");
@@ -83,7 +86,10 @@ function publisherRouteError(err: unknown): { status: number; error: string } {
   }
 
   if (lower.includes("value too long") || lower.includes("22001")) {
-    return { status: 400, error: "One of the fields is too long for the database. Try a shorter site URL or re-run analysis." };
+    return {
+      status: 400,
+      error: "One of the fields is too long for the database. Try a shorter site URL or re-run analysis.",
+    };
   }
 
   if (lower.includes("econnrefused") || lower.includes("enotfound") || lower.includes("getaddrinfo")) {
@@ -137,6 +143,8 @@ async function create(request: NextRequest) {
     name,
     category,
     qualityScore,
+    onchainPublisherId,
+    pricePerImpressionWei,
     contentFocus,
     language,
     estimatedMonthlyTraffic,
@@ -168,12 +176,30 @@ async function create(request: NextRequest) {
     return NextResponse.json({ error: "floorPricePer1kUsd is required" }, { status: 400 });
   }
 
+  if (onchainPublisherId !== undefined && onchainPublisherId !== null) {
+    if (typeof onchainPublisherId !== "string" || !UINT256_DECIMAL_RE.test(onchainPublisherId)) {
+      return NextResponse.json({ error: "onchainPublisherId must be a valid uint256 decimal string" }, { status: 400 });
+    }
+  }
+
+  if (pricePerImpressionWei !== undefined && pricePerImpressionWei !== null) {
+    if (typeof pricePerImpressionWei !== "string" || !UINT256_DECIMAL_RE.test(pricePerImpressionWei)) {
+      return NextResponse.json(
+        { error: "pricePerImpressionWei must be a valid uint256 decimal string" },
+        { status: 400 },
+      );
+    }
+  }
+
   if (typeof adFormat !== "string" || !adFormat.trim()) {
     return NextResponse.json({ error: "adFormat is required" }, { status: 400 });
   }
 
   if (!isStringArray(blockedCategories) || !isStringArray(preferredAdvertiserTypes)) {
-    return NextResponse.json({ error: "blockedCategories and preferredAdvertiserTypes must be string arrays" }, { status: 400 });
+    return NextResponse.json(
+      { error: "blockedCategories and preferredAdvertiserTypes must be string arrays" },
+      { status: 400 },
+    );
   }
 
   if (walletAddress !== undefined && walletAddress !== null) {
@@ -202,6 +228,7 @@ async function create(request: NextRequest) {
 
   const publisher = await createPublisher({
     email: trunc(normalizedEmail, 255),
+    onchainPublisherId: typeof onchainPublisherId === "string" ? onchainPublisherId : null,
     walletAddress: typeof walletAddress === "string" && ETH_ADDRESS_RE.test(walletAddress) ? walletAddress : null,
     siteUrl: siteUrl.trim(),
     name: displayName,
@@ -212,6 +239,7 @@ async function create(request: NextRequest) {
     estimatedMonthlyTraffic:
       typeof estimatedMonthlyTraffic === "string" ? trunc(estimatedMonthlyTraffic.trim(), 120) : null,
     audience: typeof audience === "string" ? audience : null,
+    pricePerImpressionWei: typeof pricePerImpressionWei === "string" ? pricePerImpressionWei : null,
     floorPricePer1kUsd: trunc(floorPricePer1kUsd.trim(), 32),
     adFormat: trunc(adFormat.trim(), 64),
     blockedCategories,

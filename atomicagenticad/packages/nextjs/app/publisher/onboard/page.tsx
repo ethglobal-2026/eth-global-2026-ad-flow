@@ -1,15 +1,17 @@
 "use client";
 
-import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import type { NextPage } from "next";
+import { parseUnits } from "viem";
 import type { SiteAnalysis } from "~~/app/api/analyze-site/route";
 import type { CreatePublisherRequest, CreatePublisherResponse } from "~~/app/api/publishers/route";
 import { AgentLoader } from "~~/components/adflow/AgentLoader";
 import { Stepper } from "~~/components/adflow/Stepper";
 import { Topbar } from "~~/components/adflow/Topbar";
-import { notification } from "~~/utils/scaffold-eth";
+import { useScaffoldReadContract, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
+import { getParsedError, notification } from "~~/utils/scaffold-eth";
 
 const AGENT_LINES = [
   "Fetching site content...",
@@ -22,6 +24,29 @@ const AGENT_LINES = [
 ];
 
 const STEPS = [{ label: "Sign Up" }, { label: "Your Site" }, { label: "Ad Prefs" }];
+
+const DEFAULT_NATIVE_USD_PRICE = "2000";
+
+function toPublisherEnsName(siteUrl: string): string {
+  try {
+    const normalized = siteUrl.startsWith("http://") || siteUrl.startsWith("https://") ? siteUrl : `https://${siteUrl}`;
+    const host = new URL(normalized).hostname.replace(/^www\./, "");
+    return host || "publisher";
+  } catch {
+    return "publisher";
+  }
+}
+
+function toPricePerImpressionWei(floorPricePer1kUsd: string, nativeUsdPrice: string): bigint {
+  const usdPer1kMicro = parseUnits(floorPricePer1kUsd, 6);
+  const nativeUsdMicro = parseUnits(nativeUsdPrice, 6);
+  if (usdPer1kMicro <= 0n || nativeUsdMicro <= 0n) {
+    return 0n;
+  }
+
+  const weiPerImpression = (usdPer1kMicro * 10n ** 18n) / (nativeUsdMicro * 1000n);
+  return weiPerImpression > 0n ? weiPerImpression : 1n;
+}
 
 const PublisherOnboard: NextPage = () => {
   const router = useRouter();
@@ -71,6 +96,21 @@ const PublisherOnboard: NextPage = () => {
   const [blockedCategories, setBlockedCategories] = useState(["Gambling", "Crypto Trading"]);
   const [preferredTypes, setPreferredTypes] = useState(["SaaS / Software", "E-commerce", "Food & Beverage"]);
   const [publishing, setPublishing] = useState(false);
+  const nativeUsdPrice = (process.env.NEXT_PUBLIC_ARC_NATIVE_USD_PRICE || DEFAULT_NATIVE_USD_PRICE).trim();
+  const walletAddress = primaryWallet?.address;
+  const walletLooksValid = !!walletAddress && /^0x[a-fA-F0-9]{40}$/i.test(walletAddress);
+  const { writeContractAsync: writePublisherRegistryAsync, isMining: registeringOnchain } = useScaffoldWriteContract({
+    contractName: "PublisherRegistry",
+  });
+  const { refetch: refetchPublisherIdByAccount } = useScaffoldReadContract({
+    contractName: "PublisherRegistry",
+    functionName: "publisherIdByAccount",
+    args: [walletAddress as `0x${string}`],
+    watch: false,
+    query: {
+      enabled: walletLooksValid,
+    },
+  });
 
   // Holds the API result while the animation is still running
   const pendingAnalysis = useRef<SiteAnalysis | null>(null);
@@ -154,15 +194,24 @@ const PublisherOnboard: NextPage = () => {
                   </div>
                 ) : (
                   <>
-                    <button
-                      className="btn btn-primary w-full mt-2 gap-2"
-                      onClick={() => setShowAuthFlow(true)}
-                    >
+                    <button className="btn btn-primary w-full mt-2 gap-2" onClick={() => setShowAuthFlow(true)}>
                       <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                        <path
+                          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                          fill="#4285F4"
+                        />
+                        <path
+                          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                          fill="#34A853"
+                        />
+                        <path
+                          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
+                          fill="#FBBC05"
+                        />
+                        <path
+                          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                          fill="#EA4335"
+                        />
                       </svg>
                       Continue with Google
                     </button>
@@ -335,14 +384,41 @@ const PublisherOnboard: NextPage = () => {
                 )}
                 <button
                   className="btn btn-primary w-full mt-2"
-                  disabled={publishing || !analysis}
+                  disabled={publishing || registeringOnchain || !analysis || !walletLooksValid}
                   onClick={async () => {
                     if (!analysis) {
                       notification.error("Complete site analysis before publishing.");
                       return;
                     }
+                    if (!walletAddress || !walletLooksValid) {
+                      notification.error("A valid connected wallet is required before publishing.");
+                      return;
+                    }
                     setPublishing(true);
                     try {
+                      const pricePerImpressionWei = toPricePerImpressionWei(price.trim(), nativeUsdPrice);
+                      if (pricePerImpressionWei <= 0n) {
+                        notification.error("Invalid floor price. Enter a value greater than zero.");
+                        setPublishing(false);
+                        return;
+                      }
+
+                      let onchainPublisherId = (await refetchPublisherIdByAccount()).data ?? 0n;
+                      if (onchainPublisherId === 0n) {
+                        const ensName = toPublisherEnsName(url.trim());
+                        const metadataUri = `adflow://publisher/${encodeURIComponent(url.trim())}`;
+                        await writePublisherRegistryAsync({
+                          functionName: "createPublisherListing",
+                          args: [ensName, pricePerImpressionWei, metadataUri],
+                        });
+                        onchainPublisherId = (await refetchPublisherIdByAccount()).data ?? 0n;
+                      }
+                      if (onchainPublisherId === 0n) {
+                        notification.error("On-chain publisher registration did not return an ID.");
+                        setPublishing(false);
+                        return;
+                      }
+
                       const payload: CreatePublisherRequest = {
                         email: email.trim(),
                         siteUrl: url.trim(),
@@ -352,11 +428,13 @@ const PublisherOnboard: NextPage = () => {
                         language: analysis.language,
                         estimatedMonthlyTraffic: analysis.estimatedMonthlyTraffic,
                         audience: analysis.audience,
+                        onchainPublisherId: onchainPublisherId.toString(),
+                        pricePerImpressionWei: pricePerImpressionWei.toString(),
                         floorPricePer1kUsd: price.trim() || "0",
                         adFormat: format,
                         blockedCategories,
                         preferredAdvertiserTypes: preferredTypes,
-                        walletAddress: primaryWallet?.address,
+                        walletAddress,
                       };
                       const res = await fetch("/api/publishers", {
                         method: "POST",
@@ -386,8 +464,8 @@ const PublisherOnboard: NextPage = () => {
                       );
                       notification.success("Listing published!");
                       router.push("/publisher/dashboard");
-                    } catch {
-                      notification.error("Network error — try again.");
+                    } catch (error) {
+                      notification.error(getParsedError(error));
                       setPublishing(false);
                     }
                   }}

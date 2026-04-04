@@ -3,6 +3,7 @@ import { integer, jsonb, pgTable, text, timestamp, uuid, varchar } from "drizzle
 
 export const publishers = pgTable("publishers", {
   id: uuid("id").defaultRandom().primaryKey(),
+  onchainPublisherId: varchar("onchain_publisher_id", { length: 78 }).unique(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   walletAddress: varchar("wallet_address", { length: 42 }).unique(),
   siteUrl: text("site_url").notNull(),
@@ -13,6 +14,7 @@ export const publishers = pgTable("publishers", {
   language: varchar("language", { length: 64 }),
   estimatedMonthlyTraffic: varchar("estimated_monthly_traffic", { length: 120 }),
   audience: text("audience"),
+  pricePerImpressionWei: varchar("price_per_impression_wei", { length: 78 }),
   floorPricePer1kUsd: varchar("floor_price_per_1k_usd", { length: 32 }).notNull().default("0"),
   adFormat: varchar("ad_format", { length: 64 }).notNull().default("Both"),
   blockedCategories: jsonb("blocked_categories")
@@ -43,6 +45,7 @@ export const publisherCampaigns = pgTable("publisher_campaigns", {
 /** Advertiser account (wallet + identity). Campaign briefs live in `advertiser_campaigns`. */
 export const advertisers = pgTable("advertisers", {
   id: uuid("id").defaultRandom().primaryKey(),
+  onchainAdvertiserId: varchar("onchain_advertiser_id", { length: 78 }).unique(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   walletAddress: varchar("wallet_address", { length: 42 }).notNull().unique(),
   displayName: varchar("display_name", { length: 255 }).notNull(),

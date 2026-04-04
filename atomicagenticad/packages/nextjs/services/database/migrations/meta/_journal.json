@@ -43,6 +43,13 @@
       "when": 1775340000000,
       "tag": "0005_advertiser_campaign_publishers",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1775326401000,
+      "tag": "0006_onchain_registry_fields",
+      "breakpoints": true
     }
   ]
 }

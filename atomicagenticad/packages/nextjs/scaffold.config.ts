@@ -15,7 +15,7 @@ export const DEFAULT_ALCHEMY_API_KEY = "cR4WnXePioePZ5fFrnSiR";
 
 const scaffoldConfig = {
   // The networks on which your DApp is live
-  targetNetworks: [chains.foundry],
+  targetNetworks: [chains.arcTestnet],
   // The interval at which your front-end polls the RPC servers for new data (it has no effect if you only target the local network (default is 4000))
   pollingInterval: 3000,
   // This is ours Alchemy's default API key.
@@ -25,10 +25,11 @@ const scaffoldConfig = {
   alchemyApiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || DEFAULT_ALCHEMY_API_KEY,
   // If you want to use a different RPC for a specific network, you can add it here.
   // The key is the chain ID, and the value is the HTTP RPC URL
-  rpcOverrides: {
-    // Example:
-    // [chains.mainnet.id]: "https://mainnet.rpc.buidlguidl.com",
-  },
+  rpcOverrides: process.env.NEXT_PUBLIC_ARC_RPC_URL
+    ? {
+        [chains.arcTestnet.id]: process.env.NEXT_PUBLIC_ARC_RPC_URL,
+      }
+    : undefined,
   // This is ours WalletConnect's default project ID.
   // You can get your own at https://cloud.walletconnect.com
   // It's recommended to store it in an env variable:

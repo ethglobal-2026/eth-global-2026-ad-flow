@@ -48,6 +48,7 @@ export function memoryCreatePublisher(values: Insert): Publisher {
   const row: Publisher = {
     id: randomUUID(),
     createdAt: now,
+    onchainPublisherId: values.onchainPublisherId ?? null,
     email: values.email,
     walletAddress: values.walletAddress ?? null,
     siteUrl: values.siteUrl,
@@ -58,6 +59,7 @@ export function memoryCreatePublisher(values: Insert): Publisher {
     language: values.language ?? null,
     estimatedMonthlyTraffic: values.estimatedMonthlyTraffic ?? null,
     audience: values.audience ?? null,
+    pricePerImpressionWei: values.pricePerImpressionWei ?? null,
     floorPricePer1kUsd: values.floorPricePer1kUsd ?? "0",
     adFormat: values.adFormat ?? "Both",
     blockedCategories: values.blockedCategories ?? [],

@@ -16,12 +16,14 @@ export type CreateAdvertiserResponse = Awaited<ReturnType<typeof createAdvertise
 export type CreateAdvertiserRequest = {
   email: string;
   walletAddress: string;
+  onchainAdvertiserId?: string;
   displayName: string;
   companyName?: string | null;
   about?: string | null;
 };
 
 const ETH_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/i;
+const UINT256_DECIMAL_RE = /^(0|[1-9]\d{0,77})$/;
 
 function trunc(s: string, max: number) {
   return s.length <= max ? s : s.slice(0, max);
@@ -90,7 +92,8 @@ async function createHandler(request: NextRequest) {
   loadNextAppEnvLocalFallback();
 
   const body = await request.json();
-  const { email, walletAddress, displayName, companyName, about } = body as CreateAdvertiserRequest;
+  const { email, walletAddress, onchainAdvertiserId, displayName, companyName, about } =
+    body as CreateAdvertiserRequest;
 
   if (typeof email !== "string" || !email.trim().includes("@")) {
     return NextResponse.json({ error: "Valid email is required" }, { status: 400 });
@@ -102,6 +105,15 @@ async function createHandler(request: NextRequest) {
 
   if (typeof displayName !== "string" || !displayName.trim()) {
     return NextResponse.json({ error: "displayName is required" }, { status: 400 });
+  }
+
+  if (onchainAdvertiserId !== undefined && onchainAdvertiserId !== null) {
+    if (typeof onchainAdvertiserId !== "string" || !UINT256_DECIMAL_RE.test(onchainAdvertiserId)) {
+      return NextResponse.json(
+        { error: "onchainAdvertiserId must be a valid uint256 decimal string" },
+        { status: 400 },
+      );
+    }
   }
 
   if (companyName !== undefined && companyName !== null && typeof companyName !== "string") {
@@ -128,6 +140,7 @@ async function createHandler(request: NextRequest) {
   const advertiser = await createAdvertiser({
     email: trunc(normalizedEmail, 255),
     walletAddress: walletKey,
+    onchainAdvertiserId: typeof onchainAdvertiserId === "string" ? onchainAdvertiserId : null,
     displayName: trunc(displayName.trim(), 255),
     companyName: typeof companyName === "string" && companyName.trim() ? trunc(companyName.trim(), 255) : null,
     about: typeof about === "string" && about.trim() ? about.trim() : null,
