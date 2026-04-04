@@ -61,5 +61,9 @@ export const advertiserCampaigns = pgTable("advertiser_campaigns", {
   budgetUsdc: varchar("budget_usdc", { length: 32 }).notNull(),
   targetImpressions: integer("target_impressions").notNull(),
   creativeFileName: varchar("creative_file_name", { length: 512 }),
+  selectedPublisherIds: jsonb("selected_publisher_ids")
+    .$type<string[]>()
+    .notNull()
+    .default(sql`'[]'::jsonb`),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });

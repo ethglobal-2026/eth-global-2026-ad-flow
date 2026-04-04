@@ -1,20 +1,59 @@
 "use client";
 
-import { type ChangeEvent, useEffect, useRef, useState } from "react";
+import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { NextPage } from "next";
 import type {
   CreateAdvertiserCampaignRequest,
   CreateAdvertiserCampaignResponse,
 } from "~~/app/api/advertisers/[id]/campaigns/route";
+import type { PublishersResponse } from "~~/app/api/publishers/route";
+import { Stepper } from "~~/components/adflow/Stepper";
 import { Topbar } from "~~/components/adflow/Topbar";
-import type { AdvertiserCampaignSessionSummary, AdvertiserSessionSummary } from "~~/types/adflow";
+import type {
+  AdvertiserCampaignSessionSummary,
+  AdvertiserCheckoutPublisher,
+  AdvertiserCheckoutSession,
+  AdvertiserSessionSummary,
+  Publisher,
+} from "~~/types/adflow";
 import { notification } from "~~/utils/scaffold-eth";
+
+const STEPS = [{ label: "Campaign" }, { label: "Sites" }, { label: "Confirm" }];
+
+const CHECKOUT_SESSION_KEY = "adflow_advertiser_checkout";
+
+function scorePublisherMatch(brief: string, pub: Publisher): number {
+  const text = `${pub.category} ${pub.contentFocus ?? ""} ${pub.audience ?? ""} ${pub.name}`.toLowerCase();
+  const words = brief
+    .toLowerCase()
+    .split(/\W+/)
+    .filter(w => w.length > 3);
+  let hits = 0;
+  for (const w of words) {
+    if (text.includes(w)) hits++;
+  }
+  const base = 52 + Math.min(38, hits * 7) + (pub.qualityScore ?? 5);
+  return Math.min(98, Math.round(base));
+}
+
+function toCheckoutPublisher(pub: Publisher, matchScore: number): AdvertiserCheckoutPublisher {
+  return {
+    id: pub.id,
+    siteUrl: pub.siteUrl,
+    name: pub.name,
+    category: pub.category,
+    floorPricePer1kUsd: pub.floorPricePer1kUsd,
+    adFormat: pub.adFormat,
+    matchScore,
+  };
+}
 
 const NewAdvertiserCampaign: NextPage = () => {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [advertiser, setAdvertiser] = useState<AdvertiserSessionSummary | null>(null);
+  const [step, setStep] = useState(1);
   const [product, setProduct] = useState("BeanBox — premium coffee subscription");
   const [audience, setAudience] = useState(
     "Find me English-language websites specializing in Arabic coffee, specialty brewing, or coffee culture. Target audience: coffee enthusiasts aged 25-45.",
@@ -23,6 +62,10 @@ const NewAdvertiserCampaign: NextPage = () => {
   const [impressions, setImpressions] = useState("50000");
   const [creativeFileName, setCreativeFileName] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [publishers, setPublishers] = useState<Publisher[]>([]);
+  const [pubsLoading, setPubsLoading] = useState(false);
+  const [pubsError, setPubsError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const raw = sessionStorage.getItem("adflow_advertiser");
@@ -41,12 +84,80 @@ const NewAdvertiserCampaign: NextPage = () => {
     }
   }, [router]);
 
+  const briefText = useMemo(() => `${product} ${audience}`.trim(), [product, audience]);
+
+  const rankedPublishers = useMemo(() => {
+    return [...publishers]
+      .map(p => ({ pub: p, score: scorePublisherMatch(briefText, p) }))
+      .sort((a, b) => b.score - a.score);
+  }, [publishers, briefText]);
+
+  const loadPublishers = useCallback(async () => {
+    setPubsLoading(true);
+    setPubsError(null);
+    try {
+      const res = await fetch("/api/publishers");
+      const data = (await res.json().catch(() => ({}))) as PublishersResponse | { error?: string };
+      if (!res.ok) {
+        const msg =
+          typeof data === "object" && data && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Could not load publishers";
+        setPubsError(msg);
+        setPublishers([]);
+        return;
+      }
+      setPublishers(Array.isArray(data) ? data : []);
+    } catch {
+      setPubsError("Network error loading publishers.");
+      setPublishers([]);
+    } finally {
+      setPubsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (step === 2) void loadPublishers();
+  }, [step, loadPublishers]);
+
+  const togglePublisher = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const openFilePicker = () => fileInputRef.current?.click();
 
   const onCreativeChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     setCreativeFileName(file?.name ?? null);
   };
+
+  const selectedList = useMemo(() => {
+    return rankedPublishers.filter(({ pub }) => selectedIds.has(pub.id));
+  }, [rankedPublishers, selectedIds]);
+
+  const impressionsNum = Number.parseInt(impressions, 10);
+  const perPubImpressions =
+    selectedList.length > 0 && Number.isInteger(impressionsNum) ? Math.floor(impressionsNum / selectedList.length) : 0;
+
+  const confirmLineEstimates = useMemo(() => {
+    return selectedList.map(({ pub, score }) => {
+      const cpm = Number.parseFloat(pub.floorPricePer1kUsd) || 0;
+      const est = (perPubImpressions / 1000) * cpm;
+      return { pub, score, estUsdc: est };
+    });
+  }, [selectedList, perPubImpressions]);
+
+  const estimatedTotalUsdc = confirmLineEstimates.reduce((s, r) => s + r.estUsdc, 0);
+
+  const budgetNum = Number.parseFloat(budget);
+  const effectivePricePer1k =
+    Number.isFinite(budgetNum) && impressionsNum > 0 ? (budgetNum / (impressionsNum / 1000)).toFixed(2) : null;
+  const budgetDisplay = Number.isFinite(budgetNum) ? budgetNum.toFixed(2) : budget.trim() || "0.00";
 
   if (!advertiser) {
     return (
@@ -59,164 +170,326 @@ const NewAdvertiserCampaign: NextPage = () => {
   return (
     <div className="min-h-screen bg-base-200">
       <Topbar variant="advertiser" activeTab="new-campaign" />
-      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] px-6 py-12">
-        <div className="card bg-base-100 border border-base-300 shadow-xl w-full max-w-lg">
+      <div className="flex justify-center min-h-[calc(100vh-4rem)] px-6 py-12">
+        <div className="card bg-base-100 border border-base-300 shadow-xl w-full max-w-3xl">
           <div className="card-body">
-            <h2 className="card-title text-2xl">New campaign</h2>
-            <p className="text-base-content/60 text-sm mb-2 m-0">
-              Brief for <span className="font-medium text-base-content">{advertiser.displayName}</span> — this drives
-              publisher matching and escrow sizing.
+            <Stepper steps={STEPS} current={step} />
+            <h2 className="card-title text-2xl mt-2">New campaign</h2>
+            <p className="text-base-content/60 text-sm mb-4 m-0">
+              Logged in as <span className="font-medium text-base-content">{advertiser.displayName}</span> — brief,
+              pick sites, confirm, then fund escrow on the next screen.
             </p>
-            <fieldset className="fieldset">
-              <legend className="fieldset-legend">What are you promoting?</legend>
-              <textarea
-                className="textarea textarea-bordered w-full bg-base-200 min-h-20"
-                rows={2}
-                value={product}
-                onChange={e => setProduct(e.target.value)}
-              />
-            </fieldset>
-            <fieldset className="fieldset">
-              <legend className="fieldset-legend">Target audience & placement goals</legend>
-              <textarea
-                className="textarea textarea-bordered w-full bg-base-200"
-                rows={3}
-                value={audience}
-                onChange={e => setAudience(e.target.value)}
-              />
-            </fieldset>
-            <div className="grid grid-cols-2 gap-4">
-              <fieldset className="fieldset">
-                <legend className="fieldset-legend">Budget (USDC)</legend>
-                <label className="input input-bordered flex items-center gap-2 bg-base-200">
-                  <span className="text-base-content/60 font-semibold">$</span>
-                  <input type="number" value={budget} onChange={e => setBudget(e.target.value)} className="grow" />
-                </label>
-              </fieldset>
-              <fieldset className="fieldset">
-                <legend className="fieldset-legend">Target impressions</legend>
-                <input
-                  type="number"
-                  className="input input-bordered w-full bg-base-200"
-                  value={impressions}
-                  onChange={e => setImpressions(e.target.value)}
-                />
-              </fieldset>
-            </div>
-            <fieldset className="fieldset">
-              <legend className="fieldset-legend">Ad creative</legend>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                className="hidden"
-                onChange={onCreativeChange}
-              />
-              <div
-                role="button"
-                tabIndex={0}
-                className="border-2 border-dashed border-base-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
-                onClick={openFilePicker}
-                onKeyDown={e => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    openFilePicker();
-                  }
-                }}
-              >
-                {creativeFileName ? (
-                  <>
-                    <div className="text-primary font-semibold break-all">{creativeFileName}</div>
-                    <div className="text-sm text-base-content/50 mt-1">Filename recorded (upload pipeline next)</div>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-2xl mb-2">📎</div>
-                    <div className="text-sm text-base-content/50">Attach banner — PNG, JPG, or WebP</div>
-                    <div className="text-xs text-base-content/30 mt-1">728×90 or 300×250 typical</div>
-                  </>
-                )}
-              </div>
-            </fieldset>
-            <div className="flex gap-2 mt-2">
-              <button
-                type="button"
-                className="btn btn-ghost flex-1"
-                onClick={() => router.push("/advertiser/dashboard")}
-              >
-                Back to dashboard
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary flex-[2]"
-                disabled={submitting}
-                onClick={async () => {
-                  if (!product.trim()) {
-                    notification.error("Describe what you are promoting.");
-                    return;
-                  }
-                  if (!audience.trim()) {
-                    notification.error("Describe your target audience.");
-                    return;
-                  }
-                  const budgetNum = Number.parseFloat(budget);
-                  if (Number.isNaN(budgetNum) || budgetNum <= 0) {
-                    notification.error("Enter a positive budget in USDC.");
-                    return;
-                  }
-                  const imp = Number.parseInt(impressions, 10);
-                  if (!Number.isInteger(imp) || imp <= 0) {
-                    notification.error("Target impressions must be a positive whole number.");
-                    return;
-                  }
 
-                  setSubmitting(true);
-                  try {
-                    const payload: CreateAdvertiserCampaignRequest = {
-                      productDescription: product.trim(),
-                      targetAudience: audience.trim(),
-                      budgetUsdc: budget.trim(),
-                      targetImpressions: imp,
-                      creativeFileName: creativeFileName ?? undefined,
-                    };
-                    const res = await fetch(`/api/advertisers/${advertiser.id}/campaigns`, {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify(payload),
-                    });
-                    const data: CreateAdvertiserCampaignResponse | { error?: string } = await res
-                      .json()
-                      .catch(() => ({}));
-                    if (!res.ok) {
-                      notification.error(
-                        typeof data === "object" && data && "error" in data && typeof data.error === "string"
-                          ? data.error
-                          : "Could not save this campaign.",
+            {step === 1 && (
+              <>
+                <fieldset className="fieldset">
+                  <legend className="fieldset-legend">What are you promoting?</legend>
+                  <textarea
+                    className="textarea textarea-bordered w-full bg-base-200 min-h-20"
+                    rows={2}
+                    value={product}
+                    onChange={e => setProduct(e.target.value)}
+                  />
+                </fieldset>
+                <fieldset className="fieldset">
+                  <legend className="fieldset-legend">Target audience & placement goals</legend>
+                  <textarea
+                    className="textarea textarea-bordered w-full bg-base-200"
+                    rows={3}
+                    value={audience}
+                    onChange={e => setAudience(e.target.value)}
+                  />
+                </fieldset>
+                <div className="grid grid-cols-2 gap-4">
+                  <fieldset className="fieldset">
+                    <legend className="fieldset-legend">Budget (USDC)</legend>
+                    <label className="input input-bordered flex items-center gap-2 bg-base-200">
+                      <span className="text-base-content/60 font-semibold">$</span>
+                      <input type="number" value={budget} onChange={e => setBudget(e.target.value)} className="grow" />
+                    </label>
+                  </fieldset>
+                  <fieldset className="fieldset">
+                    <legend className="fieldset-legend">Target impressions</legend>
+                    <input
+                      type="number"
+                      className="input input-bordered w-full bg-base-200"
+                      value={impressions}
+                      onChange={e => setImpressions(e.target.value)}
+                    />
+                  </fieldset>
+                </div>
+                <fieldset className="fieldset">
+                  <legend className="fieldset-legend">Ad creative</legend>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={onCreativeChange}
+                  />
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    className="border-2 border-dashed border-base-300 rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
+                    onClick={openFilePicker}
+                    onKeyDown={e => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        openFilePicker();
+                      }
+                    }}
+                  >
+                    {creativeFileName ? (
+                      <>
+                        <div className="text-primary font-semibold break-all">{creativeFileName}</div>
+                        <div className="text-sm text-base-content/50 mt-1">Filename recorded</div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-xl mb-1">📎</div>
+                        <div className="text-sm text-base-content/50">Attach banner (PNG, JPG, WebP)</div>
+                      </>
+                    )}
+                  </div>
+                </fieldset>
+                <div className="flex gap-2 mt-4">
+                  <button type="button" className="btn btn-ghost flex-1" onClick={() => router.push("/advertiser/dashboard")}>
+                    Back to dashboard
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary flex-[2]"
+                    onClick={() => {
+                      if (!product.trim()) {
+                        notification.error("Describe what you are promoting.");
+                        return;
+                      }
+                      if (!audience.trim()) {
+                        notification.error("Describe your target audience.");
+                        return;
+                      }
+                      if (Number.isNaN(Number.parseFloat(budget)) || Number.parseFloat(budget) <= 0) {
+                        notification.error("Enter a positive budget in USDC.");
+                        return;
+                      }
+                      const imp = Number.parseInt(impressions, 10);
+                      if (!Number.isInteger(imp) || imp <= 0) {
+                        notification.error("Target impressions must be a positive whole number.");
+                        return;
+                      }
+                      setStep(2);
+                    }}
+                  >
+                    Find matching sites
+                  </button>
+                </div>
+              </>
+            )}
+
+            {step === 2 && (
+              <>
+                <p className="text-sm text-base-content/60 m-0 mb-4">
+                  Select one or more publisher sites. Matches are ranked from your brief and listing metadata (MVP
+                  heuristic).
+                </p>
+                {pubsLoading && (
+                  <div className="flex justify-center py-16">
+                    <span className="loading loading-spinner loading-lg text-primary" />
+                  </div>
+                )}
+                {!pubsLoading && pubsError && (
+                  <div className="alert alert-warning">
+                    <span>{pubsError}</span>
+                  </div>
+                )}
+                {!pubsLoading && !pubsError && publishers.length === 0 && (
+                  <div className="alert alert-info">
+                    <span>No publishers in the marketplace yet. Complete publisher onboarding first.</span>
+                  </div>
+                )}
+                {!pubsLoading && !pubsError && rankedPublishers.length > 0 && (
+                  <ul className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                    {rankedPublishers.map(({ pub, score }) => {
+                      const on = selectedIds.has(pub.id);
+                      return (
+                        <li key={pub.id}>
+                          <button
+                            type="button"
+                            onClick={() => togglePublisher(pub.id)}
+                            className={`w-full text-left rounded-lg border p-4 transition-colors ${
+                              on ? "border-primary bg-primary/10" : "border-base-300 hover:border-base-content/20"
+                            }`}
+                          >
+                            <div className="flex justify-between gap-3 items-start">
+                              <div>
+                                <div className="font-semibold text-base-content">{pub.name}</div>
+                                <div className="text-xs text-base-content/50 break-all">{pub.siteUrl}</div>
+                                <div className="text-xs text-base-content/40 mt-1">{pub.category}</div>
+                              </div>
+                              <div className="flex flex-col items-end gap-1 shrink-0">
+                                <span className="badge badge-primary badge-sm">{score}% match</span>
+                                <span className="text-xs text-base-content/50">${pub.floorPricePer1kUsd} / 1K</span>
+                                <span className="text-xs font-medium">{on ? "Selected" : "Tap to select"}</span>
+                              </div>
+                            </div>
+                          </button>
+                        </li>
                       );
-                      setSubmitting(false);
-                      return;
-                    }
-                    const created = data as CreateAdvertiserCampaignResponse;
-                    const summary: AdvertiserCampaignSessionSummary = {
-                      id: created.id,
-                      productDescription: created.productDescription,
-                      budgetUsdc: created.budgetUsdc,
-                      targetImpressions: created.targetImpressions,
-                      targetAudience: created.targetAudience,
-                    };
-                    sessionStorage.setItem("adflow_advertiser_campaign", JSON.stringify(summary));
-                    notification.success("Campaign saved — open it from the dashboard to run discovery.");
-                    router.push("/advertiser/dashboard");
-                  } catch {
-                    notification.error("Network error — try again.");
-                    setSubmitting(false);
-                  }
-                }}
-              >
-                {submitting ? <span className="loading loading-spinner loading-sm" /> : null}
-                {submitting ? "Saving…" : "Save campaign"}
-              </button>
-            </div>
+                    })}
+                  </ul>
+                )}
+                <div className="flex gap-2 mt-6">
+                  <button type="button" className="btn btn-ghost flex-1" onClick={() => setStep(1)}>
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary flex-[2]"
+                    disabled={selectedIds.size === 0 || publishers.length === 0}
+                    onClick={() => {
+                      if (selectedIds.size === 0) {
+                        notification.error("Select at least one publisher.");
+                        return;
+                      }
+                      setStep(3);
+                    }}
+                  >
+                    Review & confirm
+                  </button>
+                </div>
+              </>
+            )}
+
+            {step === 3 && (
+              <>
+                <div className="bg-base-200 rounded-lg border border-base-300 p-5 mb-4 space-y-0 divide-y divide-base-300">
+                  <p className="text-xs uppercase tracking-wide text-base-content/50 pb-3 m-0">Order summary</p>
+                  <div className="flex justify-between items-baseline gap-4 py-3">
+                    <span className="text-sm text-base-content/60 shrink-0">Price per 1K impressions</span>
+                    <span className="font-semibold text-base-content text-right">
+                      {effectivePricePer1k != null ? `$${effectivePricePer1k} USDC` : "—"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-baseline gap-4 py-3">
+                    <span className="text-sm text-base-content/60 shrink-0">Total impressions purchased</span>
+                    <span className="font-semibold text-base-content tabular-nums text-right">
+                      {impressionsNum.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-baseline gap-4 py-3">
+                    <span className="text-sm text-base-content/60 shrink-0">Split (even across sites)</span>
+                    <span className="font-medium text-base-content tabular-nums text-right">
+                      ~{perPubImpressions.toLocaleString()} per site
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-baseline gap-4 pt-3">
+                    <span className="text-sm font-semibold text-base-content shrink-0">Total price (confirmed)</span>
+                    <span className="text-lg font-bold text-primary tabular-nums">${budgetDisplay} USDC</span>
+                  </div>
+                  <p className="text-xs text-base-content/50 m-0 pt-3 leading-snug">
+                    Effective blended rate for this order (budget ÷ impression thousands). Per-site floors are listed
+                    below.
+                  </p>
+                </div>
+                <div className="rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 mb-4 text-sm text-base-content">
+                  <p className="font-semibold text-primary m-0 mb-1">Locked in escrow</p>
+                  <p className="m-0 text-base-content/80 leading-relaxed">
+                    The next step is payment: you will fund escrow with the full{" "}
+                    <span className="font-semibold text-base-content">${budgetDisplay} USDC</span>. That amount is what
+                    locks on-chain; streaming payouts settle per 1K verified impressions.
+                  </p>
+                </div>
+                {estimatedTotalUsdc > 0 && (
+                  <p className="text-xs text-base-content/45 m-0 mb-4">
+                    Planning note: sum of publisher floor rates for your split ≈ ${estimatedTotalUsdc.toFixed(2)} USDC
+                    (estimate only; escrow follows total price above).
+                  </p>
+                )}
+                <h3 className="font-semibold text-sm text-base-content/70 m-0 mb-2">Selected publishers</h3>
+                <ul className="space-y-2 mb-6">
+                  {confirmLineEstimates.map(({ pub, score, estUsdc }) => (
+                    <li key={pub.id} className="flex justify-between text-sm border-b border-base-200 pb-2">
+                      <div>
+                        <div className="font-medium">{pub.name}</div>
+                        <div className="text-xs text-base-content/50">{pub.siteUrl}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="badge badge-ghost badge-sm">{score}%</div>
+                        <div className="text-xs text-base-content/50">~${estUsdc.toFixed(2)} est.</div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                <div className="flex gap-2">
+                  <button type="button" className="btn btn-ghost flex-1" onClick={() => setStep(2)}>
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary flex-[2]"
+                    disabled={submitting}
+                    onClick={async () => {
+                      setSubmitting(true);
+                      try {
+                        const imp = Number.parseInt(impressions, 10);
+                        const payload: CreateAdvertiserCampaignRequest = {
+                          productDescription: product.trim(),
+                          targetAudience: audience.trim(),
+                          budgetUsdc: budget.trim(),
+                          targetImpressions: imp,
+                          creativeFileName: creativeFileName ?? undefined,
+                          selectedPublisherIds: [...selectedIds],
+                        };
+                        const res = await fetch(`/api/advertisers/${advertiser.id}/campaigns`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify(payload),
+                        });
+                        const data: CreateAdvertiserCampaignResponse | { error?: string } = await res
+                          .json()
+                          .catch(() => ({}));
+                        if (!res.ok) {
+                          notification.error(
+                            typeof data === "object" && data && "error" in data && typeof data.error === "string"
+                              ? data.error
+                              : "Could not create campaign.",
+                          );
+                          setSubmitting(false);
+                          return;
+                        }
+                        const created = data as CreateAdvertiserCampaignResponse;
+                        const summary: AdvertiserCampaignSessionSummary = {
+                          id: created.id,
+                          productDescription: created.productDescription,
+                          budgetUsdc: created.budgetUsdc,
+                          targetImpressions: created.targetImpressions,
+                          targetAudience: created.targetAudience,
+                        };
+                        sessionStorage.setItem("adflow_advertiser_campaign", JSON.stringify(summary));
+
+                        const checkout: AdvertiserCheckoutSession = {
+                          campaignId: created.id,
+                          budgetUsdc: created.budgetUsdc,
+                          targetImpressions: created.targetImpressions,
+                          productDescription: created.productDescription,
+                          publishers: selectedList.map(({ pub, score }) => toCheckoutPublisher(pub, score)),
+                        };
+                        sessionStorage.setItem(CHECKOUT_SESSION_KEY, JSON.stringify(checkout));
+
+                        notification.success("Campaign saved — deposit funds to fund escrow.");
+                        router.push("/advertiser/transaction");
+                      } catch {
+                        notification.error("Network error — try again.");
+                        setSubmitting(false);
+                      }
+                    }}
+                  >
+                    {submitting ? <span className="loading loading-spinner loading-sm" /> : null}
+                    {submitting ? "Saving…" : "Confirm purchase & deposit funds"}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

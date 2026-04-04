@@ -21,7 +21,7 @@ export type CreateAdvertiserRequest = {
   about?: string | null;
 };
 
-const ETH_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
+const ETH_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/i;
 
 function trunc(s: string, max: number) {
   return s.length <= max ? s : s.slice(0, max);
@@ -41,9 +41,14 @@ function routeError(err: unknown): { status: number; error: string } {
 
   if (
     (lower.includes("relation") && lower.includes("does not exist")) ||
-    (lower.includes("column") && lower.includes("does not exist"))
+    (lower.includes("column") && lower.includes("does not exist")) ||
+    lower.includes("failed query")
   ) {
-    return { status: 503, error: "Database schema is outdated. From packages/nextjs run: yarn db:migrate" };
+    return {
+      status: 503,
+      error:
+        "Database query failed — often the schema is outdated. From packages/nextjs run: npm run db:migrate (or yarn db:migrate), then restart the dev server.",
+    };
   }
 
   if (process.env.NODE_ENV === "development") {

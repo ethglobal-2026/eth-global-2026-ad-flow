@@ -21,5 +21,19 @@ export type AdvertiserCampaignSessionSummary = Pick<
   "id" | "productDescription" | "budgetUsdc" | "targetImpressions" | "targetAudience"
 >;
 
+/** Checkout payload for `/advertiser/transaction` after confirming a campaign + publisher picks. */
+export type AdvertiserCheckoutPublisher = Pick<
+  Publisher,
+  "id" | "siteUrl" | "name" | "category" | "floorPricePer1kUsd" | "adFormat"
+> & { matchScore: number };
+
+export type AdvertiserCheckoutSession = {
+  campaignId: string;
+  budgetUsdc: string;
+  targetImpressions: number;
+  productDescription: string;
+  publishers: AdvertiserCheckoutPublisher[];
+};
+
 /** Stored in sessionStorage after successful publisher onboarding (see `/publisher/onboard`). */
 export type PublisherSessionSummary = Pick<Publisher, "id" | "email" | "siteUrl" | "floorPricePer1kUsd" | "category">;

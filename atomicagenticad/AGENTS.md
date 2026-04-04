@@ -309,7 +309,7 @@ The app uses **PostgreSQL** with **Drizzle ORM** in the `packages/nextjs` packag
 - Drizzle config lives at `packages/nextjs/drizzle.config.ts`
 - Database schema lives under `packages/nextjs/services/database/config/`
 - Repository functions live under `packages/nextjs/services/database/repositories/`
-- SQL migrations live under `packages/nextjs/services/database/migrations/`
+- SQL migrations live under `packages/nextjs/services/database/migrations/` (includes `0005_advertiser_campaign_publishers.sql` for `advertiser_campaigns.selected_publisher_ids` jsonb)
 
 ### Conventions
 
@@ -386,7 +386,7 @@ async function handle(request: NextRequest) {
 | `/api/publishers/[id]` | `GET` | Returns one publisher by UUID or 404. |
 | `/api/advertisers` | `GET`, `POST` | Advertiser accounts (profile + wallet). `GET` returns all rows. `POST` body `CreateAdvertiserRequest` (`email`, `walletAddress`, `displayName`; optional `companyName`, `about`). Returns `CreateAdvertiserResponse` (201) or `{ error }` (409 duplicate email or wallet). |
 | `/api/advertisers/[id]` | `GET` | Returns one advertiser by UUID or 404. |
-| `/api/advertisers/[id]/campaigns` | `GET`, `POST` | Campaigns for that advertiser. `POST` body `CreateAdvertiserCampaignRequest` (`productDescription`, `targetAudience`, `budgetUsdc`, `targetImpressions`; optional `creativeFileName`). Returns `CreateAdvertiserCampaignResponse` (201). |
+| `/api/advertisers/[id]/campaigns` | `GET`, `POST` | Campaigns for that advertiser. `POST` body `CreateAdvertiserCampaignRequest` (`productDescription`, `targetAudience`, `budgetUsdc`, `targetImpressions`, **`selectedPublisherIds`** non-empty UUID array, max 24; optional `creativeFileName`). Returns `CreateAdvertiserCampaignResponse` (201). After the wizard, the client stores `AdvertiserCheckoutSession` in `sessionStorage` under `adflow_advertiser_checkout` for `/advertiser/transaction`. |
 | `/api/publishers/[id]/dashboard` | `GET` | Publisher dashboard payload: full `publisher` row, `campaigns[]`, and computed `stats` (revenue, impressions, escrow estimate). |
 
 ---

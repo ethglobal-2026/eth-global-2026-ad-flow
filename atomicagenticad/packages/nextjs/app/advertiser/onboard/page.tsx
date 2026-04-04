@@ -22,7 +22,8 @@ const AdvertiserOnboard: NextPage = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-  const walletLooksValid = /^0x[a-fA-F0-9]{40}$/.test(walletAddress.trim());
+  const walletTrimmed = walletAddress.trim();
+  const walletLooksValid = /^0x[a-fA-F0-9]{40}$/i.test(walletTrimmed);
 
   return (
     <div className="min-h-screen bg-base-200">
@@ -118,12 +119,21 @@ const AdvertiserOnboard: NextPage = () => {
                     type="button"
                     className="btn btn-primary flex-[2]"
                     disabled={submitting || !walletLooksValid || !displayName.trim()}
+                    title={
+                      submitting
+                        ? "Saving…"
+                        : !displayName.trim()
+                          ? "Enter your name to continue"
+                          : !walletLooksValid
+                            ? "Enter a valid Ethereum address: 0x plus 40 hex characters"
+                            : undefined
+                    }
                     onClick={async () => {
                       setSubmitting(true);
                       try {
                         const payload: CreateAdvertiserRequest = {
                           email: email.trim(),
-                          walletAddress: walletAddress.trim(),
+                          walletAddress: walletTrimmed.toLowerCase(),
                           displayName: displayName.trim(),
                           companyName: companyName.trim() || null,
                           about: about.trim() || null,
@@ -160,7 +170,7 @@ const AdvertiserOnboard: NextPage = () => {
                     }}
                   >
                     {submitting ? <span className="loading loading-spinner loading-sm" /> : null}
-                    {submitting ? "Saving…" : "Continue to campaign"}
+                    {submitting ? "Saving…" : "Save account & go to dashboard"}
                   </button>
                 </div>
               </>

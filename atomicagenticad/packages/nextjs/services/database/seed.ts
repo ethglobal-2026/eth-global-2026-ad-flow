@@ -19,15 +19,6 @@ async function main() {
     about: "Coffee subscription brand focused on specialty and Arabic coffee culture.",
   });
 
-  await createAdvertiserCampaign({
-    advertiserId: adv.id,
-    productDescription: "BeanBox — premium coffee subscription",
-    targetAudience: "Coffee enthusiasts aged 25–45, specialty brewing interest.",
-    budgetUsdc: "200.00",
-    targetImpressions: 50_000,
-    creativeFileName: null,
-  });
-
   const pub = await createPublisher({
     email: "publisher@example.com",
     walletAddress: "0x1111111111111111111111111111111111111111",
@@ -43,6 +34,16 @@ async function main() {
     adFormat: "Both",
     blockedCategories: ["Gambling"],
     preferredAdvertiserTypes: ["SaaS / Software", "Education"],
+  });
+
+  await createAdvertiserCampaign({
+    advertiserId: adv.id,
+    productDescription: "BeanBox — premium coffee subscription",
+    targetAudience: "Coffee enthusiasts aged 25–45, specialty brewing interest.",
+    budgetUsdc: "200.00",
+    targetImpressions: 50_000,
+    creativeFileName: null,
+    selectedPublisherIds: [pub.id],
   });
 
   await insertPublisherCampaigns([

@@ -28,6 +28,7 @@ export function memoryCreateAdvertiserCampaign(values: Insert): AdvertiserCampai
     budgetUsdc: values.budgetUsdc,
     targetImpressions: values.targetImpressions,
     creativeFileName: values.creativeFileName ?? null,
+    selectedPublisherIds: values.selectedPublisherIds ?? [],
   };
   store.push(row);
   return row;

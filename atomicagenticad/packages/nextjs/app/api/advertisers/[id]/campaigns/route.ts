@@ -4,6 +4,7 @@ import {
   listAdvertiserCampaigns,
 } from "~~/services/database/repositories/advertiserCampaigns";
 import { getAdvertiserById } from "~~/services/database/repositories/advertisers";
+import { getPublisherById } from "~~/services/database/repositories/publishers";
 import { loadNextAppEnvLocalFallback } from "~~/utils/server/loadNextAppEnvLocalFallback";
 
 export type AdvertiserCampaignsListResponse = Awaited<ReturnType<typeof listAdvertiserCampaigns>>;
@@ -16,9 +17,13 @@ export type CreateAdvertiserCampaignRequest = {
   budgetUsdc: string;
   targetImpressions: number;
   creativeFileName?: string | null;
+  /** Publisher UUIDs chosen for this flight (must exist). */
+  selectedPublisherIds: string[];
 };
 
 type RouteContext = { params: Promise<{ id: string }> };
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function trunc(s: string, max: number) {
   return s.length <= max ? s : s.slice(0, max);
@@ -38,9 +43,13 @@ function routeError(err: unknown): { status: number; error: string } {
 
   if (
     (lower.includes("relation") && lower.includes("does not exist")) ||
-    (lower.includes("column") && lower.includes("does not exist"))
+    (lower.includes("column") && lower.includes("does not exist")) ||
+    lower.includes("failed query")
   ) {
-    return { status: 503, error: "Database schema is outdated. From packages/nextjs run: yarn db:migrate" };
+    return {
+      status: 503,
+      error: "Database schema is outdated. From packages/nextjs run: npm run db:migrate (or yarn db:migrate).",
+    };
   }
 
   if (process.env.NODE_ENV === "development") {
@@ -77,7 +86,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     const body = await request.json();
-    const { productDescription, targetAudience, budgetUsdc, targetImpressions, creativeFileName } =
+    const { productDescription, targetAudience, budgetUsdc, targetImpressions, creativeFileName, selectedPublisherIds } =
       body as CreateAdvertiserCampaignRequest;
 
     if (typeof productDescription !== "string" || !productDescription.trim()) {
@@ -105,6 +114,25 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "creativeFileName must be a string" }, { status: 400 });
     }
 
+    if (!Array.isArray(selectedPublisherIds) || selectedPublisherIds.length === 0) {
+      return NextResponse.json({ error: "selectedPublisherIds must be a non-empty array of publisher UUIDs" }, { status: 400 });
+    }
+
+    if (selectedPublisherIds.length > 24) {
+      return NextResponse.json({ error: "Too many publishers selected (max 24)" }, { status: 400 });
+    }
+
+    const uniqueIds = [...new Set(selectedPublisherIds)];
+    for (const pid of uniqueIds) {
+      if (typeof pid !== "string" || !UUID_RE.test(pid)) {
+        return NextResponse.json({ error: "Each selectedPublisherIds entry must be a valid UUID" }, { status: 400 });
+      }
+      const pub = await getPublisherById(pid);
+      if (!pub) {
+        return NextResponse.json({ error: `Publisher not found: ${pid}` }, { status: 400 });
+      }
+    }
+
     const campaign = await createAdvertiserCampaign({
       advertiserId: id,
       productDescription: productDescription.trim(),
@@ -113,6 +141,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       targetImpressions,
       creativeFileName:
         typeof creativeFileName === "string" && creativeFileName.trim() ? trunc(creativeFileName.trim(), 512) : null,
+      selectedPublisherIds: uniqueIds,
     });
 
     return NextResponse.json(campaign, { status: 201 });
