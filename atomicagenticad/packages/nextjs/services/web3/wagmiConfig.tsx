@@ -1,4 +1,3 @@
-import { wagmiConnectors } from "./wagmiConnectors";
 import { Chain, createClient, fallback, http } from "viem";
 import { hardhat, mainnet } from "viem/chains";
 import { createConfig } from "wagmi";
@@ -12,9 +11,9 @@ export const enabledChains = targetNetworks.find((network: Chain) => network.id 
   ? targetNetworks
   : ([...targetNetworks, mainnet] as const);
 
+// Connectors are injected by DynamicWagmiConnector — none needed here.
 export const wagmiConfig = createConfig({
   chains: enabledChains,
-  connectors: wagmiConnectors(),
   ssr: true,
   client: ({ chain }) => {
     const mainnetFallbackWithDefaultRPC = [http("https://mainnet.rpc.buidlguidl.com")];

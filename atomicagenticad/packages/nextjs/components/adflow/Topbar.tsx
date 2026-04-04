@@ -1,7 +1,7 @@
 "use client";
 
+import { DynamicWidget } from "@dynamic-labs/sdk-react-core";
 import { useRouter } from "next/navigation";
-import { RainbowKitCustomConnectButton } from "~~/components/scaffold-eth";
 
 type TopbarVariant = "landing" | "onboarding" | "publisher" | "advertiser";
 
@@ -55,7 +55,7 @@ export const Topbar = ({ variant, activeTab, onboardingLabel }: TopbarProps) => 
               Wallet
             </button>
           </div>
-          <RainbowKitCustomConnectButton />
+          <DynamicWidget />
         </div>
       )}
 
@@ -99,7 +99,7 @@ export const Topbar = ({ variant, activeTab, onboardingLabel }: TopbarProps) => 
               Wallet
             </button>
           </div>
-          <RainbowKitCustomConnectButton />
+          <DynamicWidget />
         </div>
       )}
     </div>

@@ -21,6 +21,9 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.56.0",
+    "@dynamic-labs/ethereum": "^4.75.0",
+    "@dynamic-labs/sdk-react-core": "^4.75.0",
+    "@dynamic-labs/wagmi-connector": "^4.75.0",
     "@heroicons/react": "~2.1.5",
     "@neondatabase/serverless": "^1.0.1",
     "@rainbow-me/rainbowkit": "2.2.9",
