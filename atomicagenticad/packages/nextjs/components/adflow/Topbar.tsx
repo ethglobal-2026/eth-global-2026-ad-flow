@@ -32,7 +32,7 @@ export const Topbar = ({ variant, activeTab, onboardingLabel }: TopbarProps) => 
         className="btn btn-ghost px-2 flex items-center gap-2.5"
         onClick={() => router.push("/")}
       >
-        <Image src="/adflow-logo.png" alt="AdFlow logo" width={28} height={28} className="rounded-sm" priority />
+        <Image src="/adflow-logo.png" alt="AdFlow logo" width={34} height={34} className="rounded-sm" priority />
         <span
           className="font-bold text-base-content text-base tracking-tight"
           style={{ fontFamily: "var(--font-sans)" }}
