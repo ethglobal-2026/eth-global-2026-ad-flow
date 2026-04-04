@@ -11,6 +11,7 @@ contract PublisherRegistryTest is Test {
     address internal publisher = vm.addr(2);
     address internal anotherPublisher = vm.addr(3);
     address internal outsider = vm.addr(4);
+    address internal dealManager = vm.addr(5);
 
     function setUp() public {
         publisherRegistry = new PublisherRegistry(admin);
@@ -89,6 +90,23 @@ contract PublisherRegistryTest is Test {
         assertEq(profile.updatedAt, block.timestamp);
     }
 
+    function testDealManagerCanUpdateAvailabilityForDealLifecycle() public {
+        vm.prank(publisher);
+        uint256 publisherId = publisherRegistry.createPublisherListing("publisher.eth", 10, "ipfs://publisher-1");
+
+        bytes32 dealManagerRole = publisherRegistry.DEAL_MANAGER_ROLE();
+        vm.prank(admin);
+        publisherRegistry.grantRole(dealManagerRole, dealManager);
+
+        vm.warp(block.timestamp + 1);
+        vm.prank(dealManager);
+        publisherRegistry.setPublisherAvailabilityForDeal(publisherId, false);
+
+        PublisherRegistry.PublisherProfile memory profile = publisherRegistry.getPublisher(publisherId);
+        assertFalse(profile.available);
+        assertEq(profile.updatedAt, block.timestamp);
+    }
+
     function testIsAvailablePublisherRequiresActiveAndAvailableListing() public {
         vm.prank(publisher);
         uint256 publisherId = publisherRegistry.createPublisherListing("publisher.eth", 10, "ipfs://publisher-1");
@@ -117,6 +135,15 @@ contract PublisherRegistryTest is Test {
             abi.encodeWithSelector(PublisherRegistry.NotPublisherAccountOrAdmin.selector, publisherId, outsider)
         );
         publisherRegistry.updatePublisherListing(publisherId, "publisher-v2.eth", 25, "ipfs://publisher-2");
+    }
+
+    function testUnauthorizedUserCannotManagePublisherAvailabilityForDealLifecycle() public {
+        vm.prank(publisher);
+        uint256 publisherId = publisherRegistry.createPublisherListing("publisher.eth", 10, "ipfs://publisher-1");
+
+        vm.prank(outsider);
+        vm.expectRevert(abi.encodeWithSelector(PublisherRegistry.NotDealManager.selector, outsider));
+        publisherRegistry.setPublisherAvailabilityForDeal(publisherId, false);
     }
 
     function testPublisherCannotCreateTwoListings() public {

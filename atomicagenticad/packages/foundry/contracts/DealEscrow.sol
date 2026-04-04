@@ -1,9 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+interface IDealLifecycleManager {
+    function handleDealClosed(uint256 publisherId) external;
+}
+
 contract DealEscrow {
     address public immutable ADVERTISER;
     address public immutable PUBLISHER;
+    address public immutable IMPRESSION_REPORTER;
+    address public immutable DEAL_LIFECYCLE_MANAGER;
+    uint256 public immutable PUBLISHER_ID;
     uint256 public immutable PRICE_PER_IMPRESSION;
     uint256 public immutable TOTAL_BUDGET;
     uint256 public immutable MAX_IMPRESSIONS;
@@ -23,6 +30,7 @@ contract DealEscrow {
     error Unauthorized(address caller);
     error DealClosedError();
     error ZeroAmount();
+    error InvalidImpressionReporter();
     error FundingExceedsBudget(uint256 fundedAmount, uint256 totalBudget);
     error ImpressionsExceedMaximum(uint256 confirmedImpressions, uint256 maxImpressions);
     error NoClaimableAmount();
@@ -33,18 +41,29 @@ contract DealEscrow {
     /// @notice Creates a new escrow for a single advertiser-publisher deal.
     /// @param advertiser_ The advertiser allowed to fund, close, and refund the deal.
     /// @param publisher_ The publisher entitled to receive earned payments.
+    /// @param impressionReporter_ The permissioned reporter address allowed to confirm impressions.
+    /// @param dealLifecycleManager_ The contract notified when the deal closes.
+    /// @param publisherId_ The registry id for the publisher assigned to this deal.
     /// @param pricePerImpression_ The amount of native token earned per confirmed impression.
     /// @param totalBudget_ The maximum native-token budget that can be funded into this escrow.
     /// @param maxImpressions_ The maximum number of impressions that can be confirmed for this deal.
     constructor(
         address advertiser_,
         address publisher_,
+        address impressionReporter_,
+        address dealLifecycleManager_,
+        uint256 publisherId_,
         uint256 pricePerImpression_,
         uint256 totalBudget_,
         uint256 maxImpressions_
     ) {
+        if (impressionReporter_ == address(0)) revert InvalidImpressionReporter();
+
         ADVERTISER = advertiser_;
         PUBLISHER = publisher_;
+        IMPRESSION_REPORTER = impressionReporter_;
+        DEAL_LIFECYCLE_MANAGER = dealLifecycleManager_;
+        PUBLISHER_ID = publisherId_;
         PRICE_PER_IMPRESSION = pricePerImpression_;
         TOTAL_BUDGET = totalBudget_;
         MAX_IMPRESSIONS = maxImpressions_;
@@ -71,12 +90,11 @@ contract DealEscrow {
     }
 
     /// @notice Records newly confirmed impressions for the deal.
-    /// @dev In v1 this is advertiser-controlled until CRE-based confirmation is added. If the updated total
-    /// would exceed {MAX_IMPRESSIONS}, it is capped at that maximum.
+    /// @dev This entrypoint is reserved for the permissioned reporter address. If the updated total would exceed
+    /// {MAX_IMPRESSIONS}, it is capped at that maximum.
     /// @param additionalImpressions The number of newly confirmed impressions to add.
     function recordConfirmedImpressions(uint256 additionalImpressions) external {
-        // TODO: This should come from the CRE rather than the advertiser
-        if (msg.sender != ADVERTISER) revert Unauthorized(msg.sender);
+        if (msg.sender != IMPRESSION_REPORTER) revert Unauthorized(msg.sender);
         if (closed) revert DealClosedError();
         if (additionalImpressions == 0) revert ZeroAmount();
 
@@ -115,6 +133,9 @@ contract DealEscrow {
         if (closed) revert DealClosedError();
 
         closed = true;
+        if (DEAL_LIFECYCLE_MANAGER != address(0)) {
+            IDealLifecycleManager(DEAL_LIFECYCLE_MANAGER).handleDealClosed(PUBLISHER_ID);
+        }
         emit DealClosed();
     }
 

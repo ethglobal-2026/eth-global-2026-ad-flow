@@ -72,7 +72,7 @@ const CampaignDashboard: NextPage = () => {
               <span className="badge badge-info">Streaming</span>
             </div>
             <p className="text-sm text-base-content/50 mb-4 m-0">
-              Payments auto-release per 1,000 impressions verified by Chainlink CRE
+              Payments auto-release per 1,000 impressions verified by the permissioned reporting service
             </p>
             <ul className="space-y-4">
               {TIMELINE.map(item => (
@@ -105,12 +105,12 @@ const CampaignDashboard: NextPage = () => {
           <div className="card-body">
             <div className="flex items-center justify-between mb-2">
               <h2 className="card-title">Impression Verification</h2>
-              <span className="badge badge-success">Chainlink CRE</span>
+              <span className="badge badge-success">Permissioned Reporter</span>
             </div>
             <div className="bg-base-200 rounded-lg border border-base-300 divide-y divide-base-300">
               {[
                 { label: "Verification Method", value: "CDN Server-Side Logging" },
-                { label: "Oracle", value: "Chainlink CRE (Confidential Compute)" },
+                { label: "Oracle", value: "Permissioned Impression Oracle" },
                 { label: "Last Verified", value: "2 minutes ago" },
                 { label: "Escrow Contract", value: "0xAdFl...0wEscr0w", mono: true },
                 { label: "Dispute Status", value: "None", accent: true },

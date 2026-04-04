@@ -58,7 +58,7 @@ const Transaction: NextPage = () => {
 
             <div className="bg-primary/10 rounded-lg p-4 mb-6 text-sm text-primary leading-relaxed">
               Funds will be locked in a smart contract escrow. Payments stream to the publisher as impressions are
-              verified by Chainlink CRE. You can pause or dispute at any time.
+              verified by the platform's permissioned reporting service. You can pause or dispute at any time.
             </div>
 
             <button className="btn btn-primary w-full btn-lg" onClick={() => setModalOpen(true)}>

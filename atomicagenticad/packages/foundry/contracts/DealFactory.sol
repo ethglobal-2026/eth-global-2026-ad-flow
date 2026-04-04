@@ -8,10 +8,12 @@ import {PublisherRegistry} from "./PublisherRegistry.sol";
 contract DealFactory {
     AdvertiserRegistry public immutable ADVERTISER_REGISTRY;
     PublisherRegistry public immutable PUBLISHER_REGISTRY;
+    address public immutable AUTHORIZED_REPORTER;
 
     uint256 public nextDealId = 1;
 
     mapping(uint256 dealId => address escrow) public escrowByDealId;
+    mapping(address escrow => uint256 publisherId) public publisherIdByEscrow;
 
     event DealCreated(
         uint256 indexed dealId,
@@ -30,6 +32,7 @@ contract DealFactory {
     error InvalidMaxImpressions();
     error AdvertiserNotActive(address advertiser);
     error PublisherNotAvailable(uint256 publisherId);
+    error UnauthorizedEscrow(address caller);
 
     constructor(address advertiserRegistry_, address publisherRegistry_) {
         if (advertiserRegistry_ == address(0) || publisherRegistry_ == address(0)) {
@@ -38,6 +41,7 @@ contract DealFactory {
 
         ADVERTISER_REGISTRY = AdvertiserRegistry(advertiserRegistry_);
         PUBLISHER_REGISTRY = PublisherRegistry(publisherRegistry_);
+        AUTHORIZED_REPORTER = msg.sender;
     }
 
     function createDeal(
@@ -59,6 +63,9 @@ contract DealFactory {
             new DealEscrow(
                 msg.sender,
                 publisher,
+                AUTHORIZED_REPORTER,
+                address(this),
+                publisherId,
                 publisherProfile.pricePerImpression,
                 totalBudget,
                 maxImpressions
@@ -66,6 +73,8 @@ contract DealFactory {
         );
 
         escrowByDealId[dealId] = escrow;
+        publisherIdByEscrow[escrow] = publisherId;
+        PUBLISHER_REGISTRY.setPublisherAvailabilityForDeal(publisherId, false);
 
         emit DealCreated(
             dealId,
@@ -82,5 +91,11 @@ contract DealFactory {
 
     function getDealEscrow(uint256 dealId) external view returns (address) {
         return escrowByDealId[dealId];
+    }
+
+    function handleDealClosed(uint256 publisherId_) external {
+        if (publisherIdByEscrow[msg.sender] != publisherId_) revert UnauthorizedEscrow(msg.sender);
+
+        PUBLISHER_REGISTRY.setPublisherAvailabilityForDeal(publisherId_, true);
     }
 }
