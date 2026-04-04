@@ -58,12 +58,8 @@ export const Topbar = ({ variant, activeTab, onboardingLabel }: TopbarProps) => 
           </div>
           <DynamicWidget />
           {user && (
-            <button
-              className="btn btn-ghost btn-xs text-base-content/30 hover:text-error hover:bg-transparent"
-              onClick={() => handleLogOut()}
-              title="Sign out"
-            >
-              ↪
+            <button className="btn btn-ghost btn-sm text-base-content/60" onClick={() => handleLogOut()}>
+              Log out
             </button>
           )}
         </div>
@@ -111,12 +107,8 @@ export const Topbar = ({ variant, activeTab, onboardingLabel }: TopbarProps) => 
           </div>
           <DynamicWidget />
           {user && (
-            <button
-              className="btn btn-ghost btn-xs text-base-content/30 hover:text-error hover:bg-transparent"
-              onClick={() => handleLogOut()}
-              title="Sign out"
-            >
-              ↪
+            <button className="btn btn-ghost btn-sm text-base-content/60" onClick={() => handleLogOut()}>
+              Log out
             </button>
           )}
         </div>
