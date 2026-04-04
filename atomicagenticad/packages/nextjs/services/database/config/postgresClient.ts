@@ -1,4 +1,5 @@
 import * as schema from "./schema";
+import { loadNextAppEnvLocalFallback } from "~~/utils/server/loadNextAppEnvLocalFallback";
 import { neonConfig, Pool as NeonPool, neon } from "@neondatabase/serverless";
 import { drizzle as drizzleNeonHttp } from "drizzle-orm/neon-http";
 import { drizzle as drizzleNeon } from "drizzle-orm/neon-serverless";
@@ -19,6 +20,7 @@ let dbInstance: DatabaseClient | null = null;
 let poolInstance: Pool | NeonPool | null = null;
 
 function getConnectionString() {
+  loadNextAppEnvLocalFallback();
   const connectionString = process.env.POSTGRES_URL;
 
   if (!connectionString) {

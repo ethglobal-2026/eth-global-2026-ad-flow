@@ -1,0 +1,22 @@
+# Local PostgreSQL for AdFlow publisher persistence (development).
+# Start: yarn db:up   Stop: yarn db:down
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: adflow
+    volumes:
+      - adflow_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d adflow"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  adflow_pg_data:

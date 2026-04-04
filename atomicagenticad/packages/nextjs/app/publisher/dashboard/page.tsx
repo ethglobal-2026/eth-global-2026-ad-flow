@@ -3,9 +3,20 @@
 import { useEffect, useState } from "react";
 import type { NextPage } from "next";
 import { Topbar } from "~~/components/adflow/Topbar";
+import type { PublisherSessionSummary } from "~~/types/adflow";
 
 const PublisherDashboard: NextPage = () => {
   const [amount, setAmount] = useState(142.8);
+  const [sessionPublisher, setSessionPublisher] = useState<PublisherSessionSummary | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("adflow_publisher");
+      if (raw) setSessionPublisher(JSON.parse(raw) as PublisherSessionSummary);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => setAmount(prev => prev + 0.004 * Math.random()), 3000);
@@ -41,7 +52,9 @@ const PublisherDashboard: NextPage = () => {
         <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
           <div>
             <h1 className="text-3xl font-bold text-base-content">Publisher Dashboard</h1>
-            <p className="text-base-content/60 mt-1 m-0">arabicacoffee.blog</p>
+            <p className="text-base-content/60 mt-1 m-0">
+              {sessionPublisher?.siteUrl ?? "Complete onboarding to link your site"}
+            </p>
           </div>
           <span className="badge badge-success badge-lg">Listing Active</span>
         </div>
@@ -62,7 +75,10 @@ const PublisherDashboard: NextPage = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {[
             { value: "35,700", label: "Impressions Served" },
-            { value: "$4.00", label: "Price / 1K Impressions" },
+            {
+              value: sessionPublisher?.floorPricePer1kUsd ? `$${sessionPublisher.floorPricePer1kUsd}` : "$4.00",
+              label: "Price / 1K Impressions",
+            },
             { value: "2", label: "Active Campaigns" },
             { value: "$57.20", label: "Remaining in Escrow" },
           ].map(s => (

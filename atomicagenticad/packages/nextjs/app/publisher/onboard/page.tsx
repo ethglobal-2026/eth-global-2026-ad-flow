@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { NextPage } from "next";
 import type { SiteAnalysis } from "~~/app/api/analyze-site/route";
+import type { CreatePublisherRequest, CreatePublisherResponse } from "~~/app/api/publishers/route";
 import { AgentLoader } from "~~/components/adflow/AgentLoader";
 import { Stepper } from "~~/components/adflow/Stepper";
 import { Topbar } from "~~/components/adflow/Topbar";
@@ -25,21 +26,28 @@ const PublisherOnboard: NextPage = () => {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
-  const [url, setUrl] = useState("https://arabicacoffee.blog");
+  const [url, setUrl] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<SiteAnalysis | null>(null);
   const [price, setPrice] = useState("4.00");
   const [format, setFormat] = useState("Both");
   const [blockedCategories, setBlockedCategories] = useState(["Gambling", "Crypto Trading"]);
   const [preferredTypes, setPreferredTypes] = useState(["SaaS / Software", "E-commerce", "Food & Beverage"]);
+  const [publishing, setPublishing] = useState(false);
 
   // Holds the API result while the animation is still running
   const pendingAnalysis = useRef<SiteAnalysis | null>(null);
+
+  const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   const toggleTag = (tag: string, list: string[], setList: (v: string[]) => void) =>
     setList(list.includes(tag) ? list.filter(t => t !== tag) : [...list, tag]);
 
   const handleAnalyze = () => {
+    if (!url.trim()) {
+      notification.error("Enter your website URL first.");
+      return;
+    }
     setAnalyzing(true);
     setAnalysis(null);
     pendingAnalysis.current = null;
@@ -50,15 +58,22 @@ const PublisherOnboard: NextPage = () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url }),
     })
-      .then(res => {
-        if (!res.ok) throw new Error("Analysis failed");
-        return res.json() as Promise<SiteAnalysis>;
+      .then(async res => {
+        const body = (await res.json().catch(() => ({}))) as SiteAnalysis | { error?: string };
+        if (!res.ok) {
+          const msg =
+            typeof body === "object" && body && "error" in body && typeof body.error === "string"
+              ? body.error
+              : `Analysis failed (${res.status})`;
+          throw new Error(msg);
+        }
+        return body as SiteAnalysis;
       })
       .then(data => {
         pendingAnalysis.current = data;
       })
-      .catch(() => {
-        notification.error("Site analysis failed. Check your ANTHROPIC_API_KEY.");
+      .catch((e: unknown) => {
+        notification.error(e instanceof Error ? e.message : "Site analysis failed.");
         setAnalyzing(false);
       });
   };
@@ -107,7 +122,11 @@ const PublisherOnboard: NextPage = () => {
                     onChange={e => setEmail(e.target.value)}
                   />
                 </fieldset>
-                <button className="btn btn-primary w-full mt-2" onClick={() => setStep(2)}>
+                <button
+                  className="btn btn-primary w-full mt-2"
+                  disabled={!emailLooksValid}
+                  onClick={() => setStep(2)}
+                >
                   Continue
                 </button>
                 <p className="text-xs text-center text-base-content/40 m-0">
@@ -179,7 +198,13 @@ const PublisherOnboard: NextPage = () => {
                       >
                         Re-analyze
                       </button>
-                      <button className="btn btn-primary flex-1" onClick={() => setStep(3)}>
+                      <button
+                        className="btn btn-primary flex-1"
+                        onClick={() => {
+                          if (!analysis) return;
+                          setStep(3);
+                        }}
+                      >
                         Looks Good — Continue
                       </button>
                     </div>
@@ -188,7 +213,19 @@ const PublisherOnboard: NextPage = () => {
               </>
             )}
 
-            {step === 3 && (
+            {step === 3 && !analysis && (
+              <>
+                <h2 className="card-title text-2xl">Site analysis required</h2>
+                <p className="text-base-content/60 text-sm mb-6">
+                  Go back and run analysis so we can publish your listing with accurate details.
+                </p>
+                <button className="btn btn-primary w-full" onClick={() => setStep(2)}>
+                  Back to your site
+                </button>
+              </>
+            )}
+
+            {step === 3 && analysis && (
               <>
                 <h2 className="card-title text-2xl">Set Your Ad Preferences</h2>
                 <p className="text-base-content/60 text-sm mb-6">
@@ -246,12 +283,64 @@ const PublisherOnboard: NextPage = () => {
                 </fieldset>
                 <button
                   className="btn btn-primary w-full mt-2"
-                  onClick={() => {
-                    notification.success("Listing published!");
-                    router.push("/publisher/dashboard");
+                  disabled={publishing || !analysis}
+                  onClick={async () => {
+                    if (!analysis) {
+                      notification.error("Complete site analysis before publishing.");
+                      return;
+                    }
+                    setPublishing(true);
+                    try {
+                      const payload: CreatePublisherRequest = {
+                        email: email.trim(),
+                        siteUrl: url.trim(),
+                        category: analysis.category,
+                        qualityScore: analysis.qualityScore,
+                        contentFocus: analysis.contentFocus,
+                        language: analysis.language,
+                        estimatedMonthlyTraffic: analysis.estimatedMonthlyTraffic,
+                        audience: analysis.audience,
+                        floorPricePer1kUsd: price.trim() || "0",
+                        adFormat: format,
+                        blockedCategories,
+                        preferredAdvertiserTypes: preferredTypes,
+                      };
+                      const res = await fetch("/api/publishers", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                      });
+                      const data: CreatePublisherResponse | { error?: string } = await res.json().catch(() => ({}));
+                      if (!res.ok) {
+                        notification.error(
+                          typeof data === "object" && data && "error" in data && typeof data.error === "string"
+                            ? data.error
+                            : "Could not publish listing.",
+                        );
+                        setPublishing(false);
+                        return;
+                      }
+                      const created = data as CreatePublisherResponse;
+                      sessionStorage.setItem(
+                        "adflow_publisher",
+                        JSON.stringify({
+                          id: created.id,
+                          email: created.email,
+                          siteUrl: created.siteUrl,
+                          floorPricePer1kUsd: created.floorPricePer1kUsd,
+                          category: created.category,
+                        }),
+                      );
+                      notification.success("Listing published!");
+                      router.push("/publisher/dashboard");
+                    } catch {
+                      notification.error("Network error — try again.");
+                      setPublishing(false);
+                    }
                   }}
                 >
-                  Publish Listing
+                  {publishing ? <span className="loading loading-spinner loading-sm" /> : null}
+                  {publishing ? "Publishing…" : "Publish Listing"}
                 </button>
               </>
             )}

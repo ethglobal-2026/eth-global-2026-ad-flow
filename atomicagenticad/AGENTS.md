@@ -303,8 +303,8 @@ The app uses **PostgreSQL** with **Drizzle ORM** in the `packages/nextjs` packag
 ### Conventions
 
 - Use the same `POSTGRES_URL` pattern for local development and production
-- Do not add Docker-specific database setup unless explicitly requested
-- Do not hardcode database credentials or connection strings in source files
+- **Local persistence:** from repo root run `yarn db:up` (Docker Postgres), set `POSTGRES_URL` in `packages/nextjs/.env.local` to `postgresql://postgres:postgres@127.0.0.1:5432/adflow`, then `yarn db:migrate`
+- Do not hardcode database credentials or connection strings in source files (the Docker Compose defaults are dev-only)
 - Keep database access server-side only: Route Handlers, Server Components, Server Actions, or scripts
 - Prefer adding repository functions instead of querying Drizzle tables directly from many call sites
 - Treat the current schema and seed data as provisional scaffolding unless product requirements specify otherwise
@@ -312,9 +312,12 @@ The app uses **PostgreSQL** with **Drizzle ORM** in the `packages/nextjs` packag
 ### Drizzle Workflow
 
 ```bash
-yarn drizzle-kit generate
+yarn db:up                  # optional: start local Postgres (docker compose)
+yarn drizzle-kit generate   # create migration SQL from schema changes (needs POSTGRES_URL)
+yarn db:migrate             # apply migrations (from repo root — needs POSTGRES_URL)
 yarn db:seed
 yarn db:wipe
+yarn db:down                # stop local Postgres container
 ```
 
 If `drizzle-kit` commands need a connection string, provide `POSTGRES_URL` in the shell environment or in local deployment environment configuration.
@@ -368,7 +371,8 @@ async function handle(request: NextRequest) {
 | Route | Method | Purpose |
 |---|---|---|
 | `/api/analyze-site` | `POST` | Analyzes a publisher's website using Claude. Body: `{ url: string }`. Returns `SiteAnalysis`. |
-| `/api/publishers` | `GET`, `POST` | Temporary database-backed route used to validate the Drizzle/Postgres integration. Do not treat its current payload shape as final product schema. |
+| `/api/publishers` | `GET`, `POST` | Publisher listings. `GET` returns all rows. `POST` creates a publisher from onboarding: body type `CreatePublisherRequest` (email, `siteUrl`, analysis fields, `floorPricePer1kUsd`, `adFormat`, category tag arrays; optional `walletAddress`). Returns `CreatePublisherResponse` (201) or `{ error }`. |
+| `/api/publishers/[id]` | `GET` | Returns one publisher by UUID or 404. |
 
 ---
 
@@ -630,7 +634,8 @@ Multiple developers work on this repo simultaneously. Follow these rules to avoi
 ### Types — One Source of Truth
 
 - Route response types: export from `route.ts`, import everywhere else
-- Shared domain types (e.g. `Publisher`, `Campaign`): define once in `packages/nextjs/types/adflow.ts` — **do not redefine in components or pages**
+- Shared domain types (e.g. `Publisher`, `Campaign`): **import from** `packages/nextjs/types/adflow.ts` — that file defines `Publisher` as `InferSelectModel<typeof publishers>` (so client code never imports the DB client) and adds cross-page helpers (e.g. `PublisherSessionSummary`). Repositories may re-export `Publisher` from there. **Do not redefine** domain types in components or pages
+- Request bodies for APIs: export a `*Request` type from the same `route.ts` as the handler (e.g. `CreatePublisherRequest` on `/api/publishers`)
 - Never copy-paste a type — always import it
 
 ### Adding a New API Route

@@ -7,6 +7,7 @@
     "check-types": "tsc --noEmit --incremental",
     "db:seed": "tsx services/database/seed.ts",
     "db:wipe": "tsx services/database/wipe.ts",
+    "db:migrate": "drizzle-kit migrate",
     "dev": "next dev",
     "drizzle-kit": "drizzle-kit",
     "format": "prettier --write . '!(node_modules|.next|contracts)/**/*'",
