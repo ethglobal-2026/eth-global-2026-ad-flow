@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { NextPage } from "next";
 import { BlurText } from "~~/components/bits/BlurText";
@@ -454,12 +455,7 @@ const Landing: NextPage = () => {
         style={{ background: "var(--color-base-200)" }}
       >
         <div className="flex items-center gap-2">
-          <span
-            className="flex items-center justify-center w-6 h-6 rounded text-xs font-black"
-            style={{ background: "var(--color-primary)", color: "#fff", fontFamily: "var(--font-mono)" }}
-          >
-            AF
-          </span>
+          <Image src="/adflow-logo.png" alt="AdFlow logo" width={24} height={24} className="rounded-sm" />
           <span
             className="font-bold text-sm"
             style={{ color: "var(--color-neutral)", fontFamily: "var(--font-sans)" }}

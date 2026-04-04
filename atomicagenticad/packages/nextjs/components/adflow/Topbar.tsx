@@ -1,6 +1,7 @@
 "use client";
 
 import { DynamicWidget, useDynamicContext } from "@dynamic-labs/sdk-react-core";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 type TopbarVariant = "landing" | "onboarding" | "publisher" | "advertiser";
@@ -31,12 +32,7 @@ export const Topbar = ({ variant, activeTab, onboardingLabel }: TopbarProps) => 
         className="btn btn-ghost px-2 flex items-center gap-2.5"
         onClick={() => router.push("/")}
       >
-        <span
-          className="flex items-center justify-center w-7 h-7 rounded text-xs font-black tracking-tighter text-white"
-          style={{ background: "var(--color-primary)", fontFamily: "var(--font-mono)" }}
-        >
-          AF
-        </span>
+        <Image src="/adflow-logo.png" alt="AdFlow logo" width={28} height={28} className="rounded-sm" priority />
         <span
           className="font-bold text-base-content text-base tracking-tight"
           style={{ fontFamily: "var(--font-sans)" }}
