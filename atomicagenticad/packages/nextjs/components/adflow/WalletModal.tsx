@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { notification } from "~~/utils/scaffold-eth";
 
 type WalletModalProps = {
   isOpen: boolean;
@@ -21,55 +22,54 @@ export const WalletModal = ({ isOpen, amount, fromAddress, onClose, onSuccess }:
       setProcessing(false);
       onClose();
       onSuccess();
+      notification.success(`Escrow funded! $${amount} USDC locked in smart contract.`);
     }, 2000);
   };
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal">
-        {processing ? (
-          <div style={{ textAlign: "center", padding: "20px 0" }}>
-            <div className="agent-spinner" style={{ margin: "0 auto 16px" }} />
-            <p style={{ color: "var(--text-dim)" }}>Processing transaction...</p>
-          </div>
-        ) : (
-          <>
-            <h3>Confirm Transaction</h3>
-            <p className="subtitle">You&apos;re about to fund an escrow contract.</p>
-            <div className="order-summary" style={{ margin: "0 0 20px" }}>
-              <div className="order-row">
-                <span className="label">From</span>
-                <span className="value" style={{ fontFamily: "monospace", fontSize: "0.85rem" }}>
-                  {fromAddress}
-                </span>
-              </div>
-              <div className="order-row">
-                <span className="label">To</span>
-                <span className="value" style={{ fontFamily: "monospace", fontSize: "0.85rem" }}>
-                  AdFlow Escrow Contract
-                </span>
-              </div>
-              <div className="order-row">
-                <span className="label">Amount</span>
-                <span className="value" style={{ color: "var(--accent)" }}>
-                  {amount} USDC
-                </span>
-              </div>
-              <div className="order-row">
-                <span className="label">Network Fee</span>
-                <span className="value">~$0.02</span>
-              </div>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm"
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <div className="card bg-base-100 border border-base-300 w-full max-w-sm shadow-2xl">
+        <div className="card-body">
+          {processing ? (
+            <div className="flex flex-col items-center gap-4 py-4">
+              <span className="loading loading-spinner loading-lg text-primary" />
+              <p className="text-base-content/60 m-0">Processing transaction...</p>
             </div>
-            <div style={{ display: "flex", gap: "12px" }}>
-              <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose}>
-                Cancel
-              </button>
-              <button className="btn btn-primary" style={{ flex: 2 }} onClick={handleConfirm}>
-                Confirm & Sign
-              </button>
-            </div>
-          </>
-        )}
+          ) : (
+            <>
+              <h3 className="card-title">Confirm Transaction</h3>
+              <p className="text-sm text-base-content/60 m-0">You&apos;re about to fund an escrow contract.</p>
+              <div className="bg-base-200 rounded-lg p-4 my-2 space-y-3">
+                {[
+                  { label: "From", value: fromAddress, mono: true },
+                  { label: "To", value: "AdFlow Escrow Contract", mono: true },
+                  { label: "Amount", value: `${amount} USDC`, accent: true },
+                  { label: "Network Fee", value: "~$0.02" },
+                ].map(row => (
+                  <div key={row.label} className="flex justify-between text-sm">
+                    <span className="text-base-content/60">{row.label}</span>
+                    <span
+                      className={`font-semibold ${row.mono ? "font-mono text-xs" : ""} ${row.accent ? "text-primary" : "text-base-content"}`}
+                    >
+                      {row.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="card-actions mt-2">
+                <button className="btn btn-ghost flex-1" onClick={onClose}>
+                  Cancel
+                </button>
+                <button className="btn btn-primary flex-[2]" onClick={handleConfirm}>
+                  Confirm & Sign
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

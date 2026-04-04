@@ -5,135 +5,115 @@ import type { NextPage } from "next";
 import { Topbar } from "~~/components/adflow/Topbar";
 
 const PublisherDashboard: NextPage = () => {
-  const [tickerAmount, setTickerAmount] = useState(142.8);
+  const [amount, setAmount] = useState(142.8);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTickerAmount(prev => prev + 0.004 * Math.random());
-    }, 3000);
+    const interval = setInterval(() => setAmount(prev => prev + 0.004 * Math.random()), 3000);
     return () => clearInterval(interval);
   }, []);
 
-  const whole = Math.floor(tickerAmount);
-  const dec = Math.floor((tickerAmount - whole) * 100)
+  const whole = Math.floor(amount);
+  const dec = Math.floor((amount - whole) * 100)
     .toString()
     .padStart(2, "0");
 
+  const campaigns = [
+    {
+      advertiser: "BeanBox Coffee Co.",
+      category: "E-commerce — Coffee subscriptions",
+      served: 22400,
+      total: 50000,
+      revenue: "$89.60",
+    },
+    {
+      advertiser: "BrewMaster App",
+      category: "SaaS — Coffee brewing assistant",
+      served: 13300,
+      total: 25000,
+      revenue: "$53.20",
+    },
+  ];
+
   return (
-    <div className="adflow">
-      <Topbar variant="publisher" activeTab="dashboard" walletBalance={`$${tickerAmount.toFixed(2)}`} />
-      <div className="container" style={{ paddingTop: "32px", paddingBottom: "48px" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: "32px",
-            flexWrap: "wrap",
-            gap: "16px",
-          }}
-        >
+    <div className="min-h-screen bg-base-200">
+      <Topbar variant="publisher" activeTab="dashboard" />
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
           <div>
-            <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--white)" }}>Publisher Dashboard</h1>
-            <p style={{ color: "var(--text-dim)", marginTop: "4px" }}>arabicacoffee.blog</p>
+            <h1 className="text-3xl font-bold text-base-content">Publisher Dashboard</h1>
+            <p className="text-base-content/60 mt-1 m-0">arabicacoffee.blog</p>
           </div>
-          <span className="badge badge-green">Listing Active</span>
+          <span className="badge badge-success badge-lg">Listing Active</span>
         </div>
 
         {/* Revenue Ticker */}
-        <div className="card" style={{ marginBottom: "24px", textAlign: "center", padding: "32px" }}>
-          <div
-            style={{
-              fontSize: "0.8rem",
-              color: "var(--text-dim)",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              marginBottom: "8px",
-            }}
-          >
-            Total Revenue Earned
+        <div className="card bg-base-100 border border-base-300 mb-6 text-center p-8">
+          <p className="text-xs uppercase tracking-widest text-base-content/40 mb-2 m-0">Total Revenue Earned</p>
+          <div className="flex items-baseline justify-center gap-1 tabular-nums">
+            <span className="text-lg text-base-content/50 font-semibold">$</span>
+            <span className="text-6xl font-extrabold text-primary">{whole}</span>
+            <span className="text-3xl text-primary/70">.{dec}</span>
+            <span className="text-lg text-base-content/50 font-semibold ml-1">USDC</span>
           </div>
-          <div className="streaming-ticker">
-            <span className="ticker-symbol">$</span>
-            <span>{whole}</span>
-            <span className="ticker-decimals">.{dec}</span>
-            <span className="ticker-symbol" style={{ marginLeft: "4px" }}>
-              USDC
-            </span>
-          </div>
-          <div style={{ color: "var(--text-dim)", fontSize: "0.85rem", marginTop: "8px" }}>
-            Streaming in real-time as impressions are served
-          </div>
+          <p className="text-sm text-base-content/40 mt-2 m-0">Streaming in real-time as impressions are served</p>
         </div>
 
         {/* Stats */}
-        <div className="stat-grid">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {[
             { value: "35,700", label: "Impressions Served" },
             { value: "$4.00", label: "Price / 1K Impressions" },
             { value: "2", label: "Active Campaigns" },
             { value: "$57.20", label: "Remaining in Escrow" },
           ].map(s => (
-            <div key={s.label} className="card stat-card">
-              <div className="stat-value">{s.value}</div>
-              <div className="stat-label">{s.label}</div>
+            <div key={s.label} className="card bg-base-100 border border-base-300 p-5 text-center">
+              <div className="text-3xl font-bold text-base-content">{s.value}</div>
+              <div className="text-xs uppercase tracking-wider text-base-content/40 mt-1">{s.label}</div>
             </div>
           ))}
         </div>
 
-        {/* Active Campaigns */}
-        <div className="card">
-          <div className="card-header">
-            <span className="card-title">Active Campaigns</span>
-          </div>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Advertiser</th>
-                  <th>Impressions</th>
-                  <th>Progress</th>
-                  <th>Revenue</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>
-                    <strong style={{ color: "var(--white)" }}>BeanBox Coffee Co.</strong>
-                    <br />
-                    <span style={{ fontSize: "0.8rem", color: "var(--text-dim)" }}>E-commerce — Coffee subscriptions</span>
-                  </td>
-                  <td>22,400 / 50,000</td>
-                  <td>
-                    <div className="progress-bar" style={{ width: "120px" }}>
-                      <div className="progress-fill" style={{ width: "44.8%" }} />
-                    </div>
-                  </td>
-                  <td style={{ color: "var(--accent)", fontWeight: 600 }}>$89.60</td>
-                  <td>
-                    <span className="badge badge-green">Active</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <strong style={{ color: "var(--white)" }}>BrewMaster App</strong>
-                    <br />
-                    <span style={{ fontSize: "0.8rem", color: "var(--text-dim)" }}>SaaS — Coffee brewing assistant</span>
-                  </td>
-                  <td>13,300 / 25,000</td>
-                  <td>
-                    <div className="progress-bar" style={{ width: "120px" }}>
-                      <div className="progress-fill" style={{ width: "53.2%" }} />
-                    </div>
-                  </td>
-                  <td style={{ color: "var(--accent)", fontWeight: 600 }}>$53.20</td>
-                  <td>
-                    <span className="badge badge-green">Active</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+        {/* Campaigns table */}
+        <div className="card bg-base-100 border border-base-300">
+          <div className="card-body">
+            <h2 className="card-title">Active Campaigns</h2>
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Advertiser</th>
+                    <th>Impressions</th>
+                    <th>Progress</th>
+                    <th>Revenue</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {campaigns.map(c => (
+                    <tr key={c.advertiser}>
+                      <td>
+                        <div className="font-semibold text-base-content">{c.advertiser}</div>
+                        <div className="text-xs text-base-content/50">{c.category}</div>
+                      </td>
+                      <td className="text-sm">
+                        {c.served.toLocaleString()} / {c.total.toLocaleString()}
+                      </td>
+                      <td>
+                        <progress
+                          className="progress progress-primary w-28"
+                          value={(c.served / c.total) * 100}
+                          max={100}
+                        />
+                      </td>
+                      <td className="text-primary font-semibold">{c.revenue}</td>
+                      <td>
+                        <span className="badge badge-success">Active</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

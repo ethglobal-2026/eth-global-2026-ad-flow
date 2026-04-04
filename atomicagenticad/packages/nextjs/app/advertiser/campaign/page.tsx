@@ -15,140 +15,116 @@ const CampaignDashboard: NextPage = () => {
   const [impressions, setImpressions] = useState(22400);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setImpressions(prev => Math.min(prev + Math.floor(Math.random() * 3) + 1, 50000));
-    }, 4000);
+    const interval = setInterval(
+      () => setImpressions(prev => Math.min(prev + Math.floor(Math.random() * 3) + 1, 50000)),
+      4000,
+    );
     return () => clearInterval(interval);
   }, []);
 
   const pct = (impressions / 50000) * 100;
   const spent = ((impressions / 1000) * 4).toFixed(2);
   const remaining = (200 - parseFloat(spent)).toFixed(2);
-  const impressionsRemaining = 50000 - impressions;
 
   return (
-    <div className="adflow">
-      <Topbar variant="advertiser" activeTab="campaigns" walletBalance={`$${remaining}`} />
-      <div className="container" style={{ paddingTop: "32px", paddingBottom: "48px" }}>
-        <div className="campaign-header">
+    <div className="min-h-screen bg-base-200">
+      <Topbar variant="advertiser" activeTab="campaigns" />
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
           <div>
-            <div className="campaign-title">Campaign: BeanBox Coffee</div>
-            <div style={{ color: "var(--text-dim)", fontSize: "0.9rem", marginTop: "4px" }}>
-              arabicacoffee.blog · Started April 3, 2026
-            </div>
+            <h1 className="text-2xl font-bold text-base-content">Campaign: BeanBox Coffee</h1>
+            <p className="text-base-content/50 text-sm mt-1 m-0">arabicacoffee.blog · Started April 3, 2026</p>
           </div>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <span className="badge badge-green">Active</span>
-            <button className="btn btn-secondary btn-sm">Pause Campaign</button>
+          <div className="flex gap-2 items-center">
+            <span className="badge badge-success">Active</span>
+            <button className="btn btn-outline btn-primary btn-sm">Pause Campaign</button>
           </div>
         </div>
 
         {/* Live Impressions */}
-        <div className="card impression-display">
-          <div
-            style={{
-              fontSize: "0.8rem",
-              color: "var(--text-dim)",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              marginBottom: "12px",
-            }}
-          >
-            Impressions Delivered
-          </div>
-          <div className="impression-count">{impressions.toLocaleString()}</div>
-          <div className="impression-total">of 50,000 purchased</div>
-          <div className="progress-bar" style={{ maxWidth: "400px", margin: "20px auto 0", height: "12px" }}>
-            <div className="progress-fill" style={{ width: `${pct}%` }} />
-          </div>
+        <div className="card bg-base-100 border border-base-300 text-center p-8 mb-6">
+          <p className="text-xs uppercase tracking-widest text-base-content/40 mb-3 m-0">Impressions Delivered</p>
+          <div className="text-6xl font-extrabold tabular-nums text-base-content">{impressions.toLocaleString()}</div>
+          <p className="text-base-content/50 mt-1 mb-4 m-0">of 50,000 purchased</p>
+          <progress className="progress progress-primary max-w-sm mx-auto h-3" value={pct} max={100} />
         </div>
 
         {/* Stats */}
-        <div className="stat-grid">
-          <div className="card stat-card">
-            <div className="stat-value" style={{ color: "var(--accent)" }}>
-              ${remaining}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {[
+            { value: `$${remaining}`, label: "Remaining in Escrow", accent: true },
+            { value: `$${spent}`, label: "Paid to Publisher" },
+            { value: "$4.00", label: "CPM (Cost per 1K)" },
+            { value: (50000 - impressions).toLocaleString(), label: "Impressions Remaining" },
+          ].map(s => (
+            <div key={s.label} className="card bg-base-100 border border-base-300 p-5 text-center">
+              <div className={`text-3xl font-bold ${s.accent ? "text-primary" : "text-base-content"}`}>{s.value}</div>
+              <div className="text-xs uppercase tracking-wider text-base-content/40 mt-1">{s.label}</div>
             </div>
-            <div className="stat-label">Remaining in Escrow</div>
-          </div>
-          <div className="card stat-card">
-            <div className="stat-value">${spent}</div>
-            <div className="stat-label">Paid to Publisher</div>
-          </div>
-          <div className="card stat-card">
-            <div className="stat-value">$4.00</div>
-            <div className="stat-label">CPM (Cost per 1K)</div>
-          </div>
-          <div className="card stat-card">
-            <div className="stat-value">{impressionsRemaining.toLocaleString()}</div>
-            <div className="stat-label">Impressions Remaining</div>
-          </div>
+          ))}
         </div>
 
         {/* Payment Timeline */}
-        <div className="card" style={{ marginBottom: "24px" }}>
-          <div className="card-header">
-            <span className="card-title">Payment Release History</span>
-            <span className="badge badge-blue">Streaming</span>
-          </div>
-          <div style={{ fontSize: "0.85rem", color: "var(--text-dim)", marginBottom: "16px" }}>
-            Payments auto-release per 1,000 impressions verified by Chainlink CRE
-          </div>
-          <ul className="timeline">
-            {TIMELINE.map(item => (
-              <li key={item.batch} className="timeline-item">
-                <div className="timeline-dot">✓</div>
-                <div className="timeline-content">
-                  <div className="timeline-title">
-                    1,000 impressions verified — <span className="timeline-amount">$4.00 released</span>
+        <div className="card bg-base-100 border border-base-300 mb-6">
+          <div className="card-body">
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="card-title">Payment Release History</h2>
+              <span className="badge badge-info">Streaming</span>
+            </div>
+            <p className="text-sm text-base-content/50 mb-4 m-0">
+              Payments auto-release per 1,000 impressions verified by Chainlink CRE
+            </p>
+            <ul className="space-y-4">
+              {TIMELINE.map(item => (
+                <li key={item.batch} className="flex gap-4 relative">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm shrink-0 z-10">
+                    ✓
                   </div>
-                  <div className="timeline-meta">
-                    Batch {item.batch} · {item.time}
+                  <div>
+                    <div className="text-sm text-base-content font-medium">
+                      1,000 impressions verified — <span className="text-primary font-semibold">$4.00 released</span>
+                    </div>
+                    <div className="text-xs text-base-content/40 mt-0.5">
+                      Batch {item.batch} · {item.time}
+                    </div>
                   </div>
+                </li>
+              ))}
+              <li className="flex gap-4">
+                <div className="w-8 h-8 rounded-full bg-base-300 flex items-center justify-center text-base-content/40 text-xs shrink-0">
+                  ...
                 </div>
+                <div className="text-sm text-base-content/40 self-center">18 earlier batches · April 3–4, 2026</div>
               </li>
-            ))}
-            <li className="timeline-item">
-              <div className="timeline-dot" style={{ fontSize: "0.7rem" }}>
-                ...
-              </div>
-              <div className="timeline-content">
-                <div className="timeline-title" style={{ color: "var(--text-dim)" }}>
-                  18 earlier batches
-                </div>
-                <div className="timeline-meta">April 3–4, 2026</div>
-              </div>
-            </li>
-          </ul>
+            </ul>
+          </div>
         </div>
 
-        {/* Verification Info */}
-        <div className="card">
-          <div className="card-header">
-            <span className="card-title">Impression Verification</span>
-            <span className="badge badge-green">Chainlink CRE</span>
-          </div>
-          <div className="order-summary" style={{ margin: 0 }}>
-            {[
-              { label: "Verification Method", value: "CDN Server-Side Logging" },
-              { label: "Oracle", value: "Chainlink CRE (Confidential Compute)" },
-              { label: "Last Verified", value: "2 minutes ago" },
-              { label: "Escrow Contract", value: "0xAdFl...0wEscr0w", mono: true },
-              { label: "Dispute Status", value: "None", accent: true },
-            ].map(row => (
-              <div key={row.label} className="order-row">
-                <span className="label">{row.label}</span>
-                <span
-                  className="value"
-                  style={{
-                    ...(row.mono ? { fontFamily: "monospace", fontSize: "0.85rem" } : {}),
-                    ...(row.accent ? { color: "var(--accent)" } : {}),
-                  }}
-                >
-                  {row.value}
-                </span>
-              </div>
-            ))}
+        {/* Verification */}
+        <div className="card bg-base-100 border border-base-300">
+          <div className="card-body">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="card-title">Impression Verification</h2>
+              <span className="badge badge-success">Chainlink CRE</span>
+            </div>
+            <div className="bg-base-200 rounded-lg border border-base-300 divide-y divide-base-300">
+              {[
+                { label: "Verification Method", value: "CDN Server-Side Logging" },
+                { label: "Oracle", value: "Chainlink CRE (Confidential Compute)" },
+                { label: "Last Verified", value: "2 minutes ago" },
+                { label: "Escrow Contract", value: "0xAdFl...0wEscr0w", mono: true },
+                { label: "Dispute Status", value: "None", accent: true },
+              ].map(row => (
+                <div key={row.label} className="flex justify-between px-4 py-2.5 text-sm">
+                  <span className="text-base-content/60">{row.label}</span>
+                  <span
+                    className={`font-medium ${(row as { mono?: boolean }).mono ? "font-mono text-xs" : ""} ${(row as { accent?: boolean }).accent ? "text-primary" : "text-base-content"}`}
+                  >
+                    {row.value}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

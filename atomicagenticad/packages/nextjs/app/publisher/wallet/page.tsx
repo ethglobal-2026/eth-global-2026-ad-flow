@@ -15,9 +15,7 @@ const PublisherWallet: NextPage = () => {
   const [amount, setAmount] = useState(142.8);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setAmount(prev => prev + 0.004 * Math.random());
-    }, 3000);
+    const interval = setInterval(() => setAmount(prev => prev + 0.004 * Math.random()), 3000);
     return () => clearInterval(interval);
   }, []);
 
@@ -27,65 +25,61 @@ const PublisherWallet: NextPage = () => {
     .padStart(2, "0");
 
   return (
-    <div className="adflow">
+    <div className="min-h-screen bg-base-200">
       <Topbar variant="publisher" activeTab="wallet" />
-      <div className="container-sm" style={{ paddingTop: "32px", paddingBottom: "48px" }}>
-        <div className="wallet-big-balance">
-          <div className="currency">Total Earned</div>
-          <div className="streaming-ticker" style={{ justifyContent: "center" }}>
-            <span className="ticker-symbol">$</span>
-            <span>{whole}</span>
-            <span className="ticker-decimals">.{dec}</span>
-            <span className="ticker-symbol" style={{ marginLeft: "4px" }}>
-              USDC
-            </span>
+      <div className="max-w-lg mx-auto px-6 py-8">
+        <div className="text-center py-10">
+          <p className="text-base-content/50 text-sm m-0">Total Earned</p>
+          <div className="flex items-baseline justify-center gap-1 tabular-nums mt-2">
+            <span className="text-lg text-base-content/50 font-semibold">$</span>
+            <span className="text-6xl font-extrabold text-primary">{whole}</span>
+            <span className="text-3xl text-primary/70">.{dec}</span>
+            <span className="text-lg text-base-content/50 font-semibold ml-1">USDC</span>
           </div>
-          <div className="wallet-address" style={{ marginTop: "16px" }}>
-            0x7a3f2b01...e4c92d <span style={{ cursor: "pointer" }}>📋</span>
+          <div className="inline-flex items-center gap-2 bg-base-100 border border-base-300 px-4 py-2 rounded-full font-mono text-sm text-base-content/50 mt-4">
+            0x7a3f2b01...e4c92d <button className="hover:text-base-content">📋</button>
           </div>
         </div>
 
-        <div className="stat-grid" style={{ marginBottom: "32px" }}>
-          <div className="card stat-card">
-            <div className="stat-value" style={{ color: "var(--accent)" }}>
-              ${amount.toFixed(2)}
-            </div>
-            <div className="stat-label">Received</div>
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="card bg-base-100 border border-base-300 p-5 text-center">
+            <div className="text-3xl font-bold text-primary">${amount.toFixed(2)}</div>
+            <div className="text-xs uppercase tracking-wider text-base-content/40 mt-1">Received</div>
           </div>
-          <div className="card stat-card">
-            <div className="stat-value" style={{ color: "var(--blue)" }}>
-              $57.20
-            </div>
-            <div className="stat-label">Pending in Escrow</div>
+          <div className="card bg-base-100 border border-base-300 p-5 text-center">
+            <div className="text-3xl font-bold text-info">$57.20</div>
+            <div className="text-xs uppercase tracking-wider text-base-content/40 mt-1">Pending in Escrow</div>
           </div>
         </div>
 
-        <div className="card">
-          <div className="card-header">
-            <span className="card-title">Recent Payments</span>
-            <span className="badge badge-green">Streaming</span>
-          </div>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>From</th>
-                  <th>Amount</th>
-                  <th>Batch</th>
-                  <th>Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {PAYMENTS.map((p, i) => (
-                  <tr key={i}>
-                    <td style={{ fontSize: "0.85rem" }}>{p.from}</td>
-                    <td style={{ color: "var(--accent)", fontWeight: 600 }}>{p.amount}</td>
-                    <td style={{ fontSize: "0.85rem", color: "var(--text-dim)" }}>{p.batch}</td>
-                    <td style={{ fontSize: "0.85rem", color: "var(--text-dim)" }}>{p.time}</td>
+        <div className="card bg-base-100 border border-base-300">
+          <div className="card-body">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="card-title">Recent Payments</h2>
+              <span className="badge badge-success">Streaming</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>From</th>
+                    <th>Amount</th>
+                    <th>Batch</th>
+                    <th>Time</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {PAYMENTS.map((p, i) => (
+                    <tr key={i}>
+                      <td className="text-sm">{p.from}</td>
+                      <td className="text-primary font-semibold">{p.amount}</td>
+                      <td className="text-sm text-base-content/50">{p.batch}</td>
+                      <td className="text-sm text-base-content/50">{p.time}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

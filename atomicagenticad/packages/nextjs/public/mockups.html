@@ -1,1633 +1,2328 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AdFlow — Ad Marketplace for the Open Web</title>
-<style>
-/* ===== RESET & BASE ===== */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --navy: #0f1729;
-  --navy-light: #1a2540;
-  --navy-mid: #243056;
-  --accent: #00d4aa;
-  --accent-hover: #00b894;
-  --accent-dim: rgba(0,212,170,0.12);
-  --blue: #4a9eff;
-  --orange: #ff8c42;
-  --red: #ff4757;
-  --white: #ffffff;
-  --gray-100: #f7f8fa;
-  --gray-200: #e9ecf0;
-  --gray-300: #cdd3dc;
-  --gray-400: #9aa3b2;
-  --gray-500: #6b7588;
-  --text: #e2e8f0;
-  --text-dim: #94a3b8;
-  --radius: 12px;
-  --radius-sm: 8px;
-  --shadow: 0 4px 24px rgba(0,0,0,0.25);
-  --shadow-sm: 0 2px 8px rgba(0,0,0,0.15);
-  --transition: 0.25s ease;
-}
-html { font-size: 16px; }
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: var(--navy);
-  color: var(--text);
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-a { color: var(--accent); text-decoration: none; }
-button {
-  cursor: pointer;
-  border: none;
-  font-family: inherit;
-  font-size: 1rem;
-  transition: var(--transition);
-}
-input, textarea, select {
-  font-family: inherit;
-  font-size: 1rem;
-  background: var(--navy);
-  border: 1.5px solid var(--navy-mid);
-  color: var(--text);
-  padding: 12px 16px;
-  border-radius: var(--radius-sm);
-  width: 100%;
-  transition: var(--transition);
-  outline: none;
-}
-input:focus, textarea:focus, select:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-dim);
-}
-input::placeholder, textarea::placeholder { color: var(--gray-400); }
-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239aa3b2' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AdFlow — Ad Marketplace for the Open Web</title>
+    <style>
+      /* ===== RESET & BASE ===== */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --navy: #0f1729;
+        --navy-light: #1a2540;
+        --navy-mid: #243056;
+        --accent: #00d4aa;
+        --accent-hover: #00b894;
+        --accent-dim: rgba(0, 212, 170, 0.12);
+        --blue: #4a9eff;
+        --orange: #ff8c42;
+        --red: #ff4757;
+        --white: #ffffff;
+        --gray-100: #f7f8fa;
+        --gray-200: #e9ecf0;
+        --gray-300: #cdd3dc;
+        --gray-400: #9aa3b2;
+        --gray-500: #6b7588;
+        --text: #e2e8f0;
+        --text-dim: #94a3b8;
+        --radius: 12px;
+        --radius-sm: 8px;
+        --shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
+        --transition: 0.25s ease;
+      }
+      html {
+        font-size: 16px;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: var(--navy);
+        color: var(--text);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      button {
+        cursor: pointer;
+        border: none;
+        font-family: inherit;
+        font-size: 1rem;
+        transition: var(--transition);
+      }
+      input,
+      textarea,
+      select {
+        font-family: inherit;
+        font-size: 1rem;
+        background: var(--navy);
+        border: 1.5px solid var(--navy-mid);
+        color: var(--text);
+        padding: 12px 16px;
+        border-radius: var(--radius-sm);
+        width: 100%;
+        transition: var(--transition);
+        outline: none;
+      }
+      input:focus,
+      textarea:focus,
+      select:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-dim);
+      }
+      input::placeholder,
+      textarea::placeholder {
+        color: var(--gray-400);
+      }
+      select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239aa3b2' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 14px center;
+        padding-right: 36px;
+      }
 
-/* ===== SCREENS ===== */
-.screen { display: none; min-height: 100vh; animation: fadeIn 0.3s ease; }
-.screen.active { display: block; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+      /* ===== SCREENS ===== */
+      .screen {
+        display: none;
+        min-height: 100vh;
+        animation: fadeIn 0.3s ease;
+      }
+      .screen.active {
+        display: block;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
 
-/* ===== BUTTONS ===== */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 14px 28px;
-  border-radius: var(--radius-sm);
-  font-weight: 600;
-  font-size: 1rem;
-  letter-spacing: 0.01em;
-}
-.btn-primary { background: var(--accent); color: var(--navy); }
-.btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,212,170,0.3); }
-.btn-secondary { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); }
-.btn-secondary:hover { background: var(--accent-dim); }
-.btn-ghost { background: transparent; color: var(--text-dim); }
-.btn-ghost:hover { color: var(--text); }
-.btn-large { padding: 18px 40px; font-size: 1.125rem; border-radius: var(--radius); }
-.btn-sm { padding: 8px 16px; font-size: 0.875rem; }
-.btn-block { width: 100%; }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+      /* ===== BUTTONS ===== */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 14px 28px;
+        border-radius: var(--radius-sm);
+        font-weight: 600;
+        font-size: 1rem;
+        letter-spacing: 0.01em;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: var(--navy);
+      }
+      .btn-primary:hover {
+        background: var(--accent-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 16px rgba(0, 212, 170, 0.3);
+      }
+      .btn-secondary {
+        background: transparent;
+        color: var(--accent);
+        border: 1.5px solid var(--accent);
+      }
+      .btn-secondary:hover {
+        background: var(--accent-dim);
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--text-dim);
+      }
+      .btn-ghost:hover {
+        color: var(--text);
+      }
+      .btn-large {
+        padding: 18px 40px;
+        font-size: 1.125rem;
+        border-radius: var(--radius);
+      }
+      .btn-sm {
+        padding: 8px 16px;
+        font-size: 0.875rem;
+      }
+      .btn-block {
+        width: 100%;
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none !important;
+      }
 
-/* ===== LAYOUT ===== */
-.container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
-.container-sm { max-width: 560px; margin: 0 auto; padding: 0 24px; }
+      /* ===== LAYOUT ===== */
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      .container-sm {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
 
-/* ===== TOPBAR ===== */
-.topbar {
-  position: sticky; top: 0; z-index: 100;
-  background: rgba(15,23,41,0.92);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--navy-mid);
-  padding: 0 24px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.topbar-logo {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--white);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-}
-.topbar-logo span { color: var(--accent); }
-.topbar-nav { display: flex; align-items: center; gap: 8px; }
-.topbar-nav button {
-  padding: 8px 16px;
-  border-radius: var(--radius-sm);
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-dim);
-  background: transparent;
-}
-.topbar-nav button:hover, .topbar-nav button.active {
-  color: var(--white);
-  background: var(--navy-mid);
-}
-.topbar-wallet {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--navy-light);
-  padding: 6px 14px 6px 10px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  color: var(--text-dim);
-}
-.wallet-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
-.wallet-balance { color: var(--accent); font-weight: 600; }
+      /* ===== TOPBAR ===== */
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(15, 23, 41, 0.92);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--navy-mid);
+        padding: 0 24px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .topbar-logo {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--white);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+      }
+      .topbar-logo span {
+        color: var(--accent);
+      }
+      .topbar-nav {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .topbar-nav button {
+        padding: 8px 16px;
+        border-radius: var(--radius-sm);
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-dim);
+        background: transparent;
+      }
+      .topbar-nav button:hover,
+      .topbar-nav button.active {
+        color: var(--white);
+        background: var(--navy-mid);
+      }
+      .topbar-wallet {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--navy-light);
+        padding: 6px 14px 6px 10px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        color: var(--text-dim);
+      }
+      .wallet-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent);
+      }
+      .wallet-balance {
+        color: var(--accent);
+        font-weight: 600;
+      }
 
-/* ===== CARDS ===== */
-.card {
-  background: var(--navy-light);
-  border: 1px solid var(--navy-mid);
-  border-radius: var(--radius);
-  padding: 24px;
-  transition: var(--transition);
-}
-.card:hover { border-color: rgba(0,212,170,0.3); }
-.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-.card-title { font-size: 1rem; font-weight: 600; color: var(--white); }
+      /* ===== CARDS ===== */
+      .card {
+        background: var(--navy-light);
+        border: 1px solid var(--navy-mid);
+        border-radius: var(--radius);
+        padding: 24px;
+        transition: var(--transition);
+      }
+      .card:hover {
+        border-color: rgba(0, 212, 170, 0.3);
+      }
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+      .card-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--white);
+      }
 
-/* ===== BADGES ===== */
-.badge {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.badge-green { background: rgba(0,212,170,0.15); color: var(--accent); }
-.badge-blue { background: rgba(74,158,255,0.15); color: var(--blue); }
-.badge-orange { background: rgba(255,140,66,0.15); color: var(--orange); }
-.badge-red { background: rgba(255,71,87,0.15); color: var(--red); }
+      /* ===== BADGES ===== */
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .badge-green {
+        background: rgba(0, 212, 170, 0.15);
+        color: var(--accent);
+      }
+      .badge-blue {
+        background: rgba(74, 158, 255, 0.15);
+        color: var(--blue);
+      }
+      .badge-orange {
+        background: rgba(255, 140, 66, 0.15);
+        color: var(--orange);
+      }
+      .badge-red {
+        background: rgba(255, 71, 87, 0.15);
+        color: var(--red);
+      }
 
-/* ===== STAT GRID ===== */
-.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
-.stat-card { text-align: center; }
-.stat-value { font-size: 1.75rem; font-weight: 700; color: var(--white); margin-bottom: 4px; }
-.stat-label { font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+      /* ===== STAT GRID ===== */
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      .stat-card {
+        text-align: center;
+      }
+      .stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--white);
+        margin-bottom: 4px;
+      }
+      .stat-label {
+        font-size: 0.8rem;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
 
-/* ===== PROGRESS BAR ===== */
-.progress-bar { height: 8px; background: var(--navy-mid); border-radius: 4px; overflow: hidden; }
-.progress-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--blue)); transition: width 1s ease; }
+      /* ===== PROGRESS BAR ===== */
+      .progress-bar {
+        height: 8px;
+        background: var(--navy-mid);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        border-radius: 4px;
+        background: linear-gradient(90deg, var(--accent), var(--blue));
+        transition: width 1s ease;
+      }
 
-/* ===== TABLE ===== */
-.table-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; }
-th { text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); padding: 12px 16px; border-bottom: 1px solid var(--navy-mid); }
-td { padding: 14px 16px; border-bottom: 1px solid rgba(36,48,86,0.5); font-size: 0.9rem; }
-tr:hover td { background: rgba(0,212,170,0.03); }
+      /* ===== TABLE ===== */
+      .table-wrap {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th {
+        text-align: left;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-dim);
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--navy-mid);
+      }
+      td {
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(36, 48, 86, 0.5);
+        font-size: 0.9rem;
+      }
+      tr:hover td {
+        background: rgba(0, 212, 170, 0.03);
+      }
 
-/* ===== FORM GROUPS ===== */
-.form-group { margin-bottom: 20px; }
-.form-label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-dim); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.03em; }
-.form-hint { font-size: 0.8rem; color: var(--gray-400); margin-top: 6px; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      /* ===== FORM GROUPS ===== */
+      .form-group {
+        margin-bottom: 20px;
+      }
+      .form-label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-dim);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      .form-hint {
+        font-size: 0.8rem;
+        color: var(--gray-400);
+        margin-top: 6px;
+      }
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
 
-/* ===== CHECKBOX / TAG ===== */
-.checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; }
-.tag-check {
-  padding: 8px 16px;
-  border-radius: 20px;
-  border: 1.5px solid var(--navy-mid);
-  background: transparent;
-  color: var(--text-dim);
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: var(--transition);
-}
-.tag-check:hover { border-color: var(--accent); color: var(--text); }
-.tag-check.selected { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
+      /* ===== CHECKBOX / TAG ===== */
+      .checkbox-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .tag-check {
+        padding: 8px 16px;
+        border-radius: 20px;
+        border: 1.5px solid var(--navy-mid);
+        background: transparent;
+        color: var(--text-dim);
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: var(--transition);
+      }
+      .tag-check:hover {
+        border-color: var(--accent);
+        color: var(--text);
+      }
+      .tag-check.selected {
+        border-color: var(--accent);
+        background: var(--accent-dim);
+        color: var(--accent);
+      }
 
-/* ===== STEPPER ===== */
-.stepper { display: flex; align-items: center; justify-content: center; gap: 0; margin-bottom: 40px; }
-.step {
-  display: flex; align-items: center; gap: 10px;
-  font-size: 0.85rem;
-  color: var(--text-dim);
-}
-.step-num {
-  width: 32px; height: 32px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 700;
-  font-size: 0.85rem;
-  border: 2px solid var(--navy-mid);
-  color: var(--text-dim);
-  background: transparent;
-  transition: var(--transition);
-}
-.step.active .step-num { border-color: var(--accent); background: var(--accent); color: var(--navy); }
-.step.done .step-num { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
-.step-line { width: 48px; height: 2px; background: var(--navy-mid); margin: 0 8px; }
-.step-line.active { background: var(--accent); }
+      /* ===== STEPPER ===== */
+      .stepper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+        margin-bottom: 40px;
+      }
+      .step {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.85rem;
+        color: var(--text-dim);
+      }
+      .step-num {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.85rem;
+        border: 2px solid var(--navy-mid);
+        color: var(--text-dim);
+        background: transparent;
+        transition: var(--transition);
+      }
+      .step.active .step-num {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: var(--navy);
+      }
+      .step.done .step-num {
+        border-color: var(--accent);
+        background: var(--accent-dim);
+        color: var(--accent);
+      }
+      .step-line {
+        width: 48px;
+        height: 2px;
+        background: var(--navy-mid);
+        margin: 0 8px;
+      }
+      .step-line.active {
+        background: var(--accent);
+      }
 
-/* ===== LANDING ===== */
-.landing-hero {
-  min-height: calc(100vh - 64px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 48px 24px;
-}
-.landing-hero h1 {
-  font-size: clamp(2.5rem, 5vw, 4rem);
-  font-weight: 800;
-  line-height: 1.1;
-  color: var(--white);
-  margin-bottom: 20px;
-  max-width: 700px;
-}
-.landing-hero h1 em { font-style: normal; color: var(--accent); }
-.landing-hero p {
-  font-size: 1.2rem;
-  color: var(--text-dim);
-  max-width: 520px;
-  line-height: 1.6;
-  margin-bottom: 40px;
-}
-.hero-buttons { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
-.hero-features {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
-  margin-top: 80px;
-  max-width: 800px;
-}
-.hero-feature { text-align: center; }
-.hero-feature-icon { font-size: 2rem; margin-bottom: 12px; }
-.hero-feature h3 { font-size: 1rem; color: var(--white); margin-bottom: 6px; }
-.hero-feature p { font-size: 0.85rem; color: var(--text-dim); line-height: 1.5; }
+      /* ===== LANDING ===== */
+      .landing-hero {
+        min-height: calc(100vh - 64px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 48px 24px;
+      }
+      .landing-hero h1 {
+        font-size: clamp(2.5rem, 5vw, 4rem);
+        font-weight: 800;
+        line-height: 1.1;
+        color: var(--white);
+        margin-bottom: 20px;
+        max-width: 700px;
+      }
+      .landing-hero h1 em {
+        font-style: normal;
+        color: var(--accent);
+      }
+      .landing-hero p {
+        font-size: 1.2rem;
+        color: var(--text-dim);
+        max-width: 520px;
+        line-height: 1.6;
+        margin-bottom: 40px;
+      }
+      .hero-buttons {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .hero-features {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 32px;
+        margin-top: 80px;
+        max-width: 800px;
+      }
+      .hero-feature {
+        text-align: center;
+      }
+      .hero-feature-icon {
+        font-size: 2rem;
+        margin-bottom: 12px;
+      }
+      .hero-feature h3 {
+        font-size: 1rem;
+        color: var(--white);
+        margin-bottom: 6px;
+      }
+      .hero-feature p {
+        font-size: 0.85rem;
+        color: var(--text-dim);
+        line-height: 1.5;
+      }
 
-/* ===== ONBOARDING ===== */
-.onboard-wrap {
-  min-height: calc(100vh - 64px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 24px;
-}
-.onboard-card {
-  background: var(--navy-light);
-  border: 1px solid var(--navy-mid);
-  border-radius: 16px;
-  padding: 40px;
-  width: 100%;
-  max-width: 520px;
-  box-shadow: var(--shadow);
-}
-.onboard-card h2 { font-size: 1.5rem; color: var(--white); margin-bottom: 8px; }
-.onboard-card .subtitle { color: var(--text-dim); margin-bottom: 32px; font-size: 0.95rem; }
+      /* ===== ONBOARDING ===== */
+      .onboard-wrap {
+        min-height: calc(100vh - 64px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 24px;
+      }
+      .onboard-card {
+        background: var(--navy-light);
+        border: 1px solid var(--navy-mid);
+        border-radius: 16px;
+        padding: 40px;
+        width: 100%;
+        max-width: 520px;
+        box-shadow: var(--shadow);
+      }
+      .onboard-card h2 {
+        font-size: 1.5rem;
+        color: var(--white);
+        margin-bottom: 8px;
+      }
+      .onboard-card .subtitle {
+        color: var(--text-dim);
+        margin-bottom: 32px;
+        font-size: 0.95rem;
+      }
 
-/* ===== AGENT LOADING ===== */
-.agent-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 0;
-  gap: 20px;
-}
-.agent-spinner {
-  width: 48px; height: 48px;
-  border: 3px solid var(--navy-mid);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.agent-status { color: var(--text-dim); font-size: 0.9rem; text-align: center; }
-.agent-log {
-  width: 100%;
-  background: var(--navy);
-  border-radius: var(--radius-sm);
-  padding: 16px;
-  font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 0.8rem;
-  color: var(--accent);
-  line-height: 1.8;
-  max-height: 180px;
-  overflow-y: auto;
-}
-.agent-log .log-line { opacity: 0; animation: logAppear 0.3s forwards; }
-.agent-log .log-line::before { content: '> '; color: var(--text-dim); }
-@keyframes logAppear { to { opacity: 1; } }
+      /* ===== AGENT LOADING ===== */
+      .agent-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 0;
+        gap: 20px;
+      }
+      .agent-spinner {
+        width: 48px;
+        height: 48px;
+        border: 3px solid var(--navy-mid);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .agent-status {
+        color: var(--text-dim);
+        font-size: 0.9rem;
+        text-align: center;
+      }
+      .agent-log {
+        width: 100%;
+        background: var(--navy);
+        border-radius: var(--radius-sm);
+        padding: 16px;
+        font-family: "SF Mono", "Fira Code", monospace;
+        font-size: 0.8rem;
+        color: var(--accent);
+        line-height: 1.8;
+        max-height: 180px;
+        overflow-y: auto;
+      }
+      .agent-log .log-line {
+        opacity: 0;
+        animation: logAppear 0.3s forwards;
+      }
+      .agent-log .log-line::before {
+        content: "> ";
+        color: var(--text-dim);
+      }
+      @keyframes logAppear {
+        to {
+          opacity: 1;
+        }
+      }
 
-/* ===== DISCOVERY CARDS ===== */
-.discovery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
-.pub-card {
-  background: var(--navy-light);
-  border: 1px solid var(--navy-mid);
-  border-radius: var(--radius);
-  overflow: hidden;
-  transition: var(--transition);
-  cursor: pointer;
-}
-.pub-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,212,170,0.1); }
-.pub-card-header {
-  padding: 20px 20px 0;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-}
-.pub-card-site { display: flex; align-items: center; gap: 12px; }
-.pub-card-favicon {
-  width: 40px; height: 40px;
-  border-radius: 10px;
-  background: var(--navy-mid);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.2rem;
-}
-.pub-card-name { font-weight: 600; color: var(--white); font-size: 1rem; }
-.pub-card-url { font-size: 0.8rem; color: var(--text-dim); }
-.match-score {
-  background: var(--accent-dim);
-  color: var(--accent);
-  font-size: 0.8rem;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 6px;
-}
-.pub-card-body { padding: 16px 20px; }
-.pub-card-desc { font-size: 0.85rem; color: var(--text-dim); line-height: 1.5; margin-bottom: 12px; }
-.pub-card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
-.pub-card-tags span {
-  padding: 3px 10px;
-  background: var(--navy);
-  border-radius: 12px;
-  font-size: 0.75rem;
-  color: var(--text-dim);
-}
-.pub-card-stats {
-  display: flex;
-  gap: 24px;
-  padding: 16px 20px;
-  border-top: 1px solid var(--navy-mid);
-  font-size: 0.8rem;
-}
-.pub-card-stats div { display: flex; flex-direction: column; gap: 2px; }
-.pub-card-stats .label { color: var(--text-dim); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
-.pub-card-stats .value { color: var(--white); font-weight: 600; }
-.pub-card-reason {
-  padding: 12px 20px;
-  background: var(--accent-dim);
-  font-size: 0.8rem;
-  color: var(--accent);
-  line-height: 1.4;
-  border-top: 1px solid rgba(0,212,170,0.1);
-}
-.pub-card-reason strong { display: block; margin-bottom: 4px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+      /* ===== DISCOVERY CARDS ===== */
+      .discovery-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 20px;
+      }
+      .pub-card {
+        background: var(--navy-light);
+        border: 1px solid var(--navy-mid);
+        border-radius: var(--radius);
+        overflow: hidden;
+        transition: var(--transition);
+        cursor: pointer;
+      }
+      .pub-card:hover {
+        border-color: var(--accent);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 32px rgba(0, 212, 170, 0.1);
+      }
+      .pub-card-header {
+        padding: 20px 20px 0;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+      }
+      .pub-card-site {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .pub-card-favicon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: var(--navy-mid);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+      }
+      .pub-card-name {
+        font-weight: 600;
+        color: var(--white);
+        font-size: 1rem;
+      }
+      .pub-card-url {
+        font-size: 0.8rem;
+        color: var(--text-dim);
+      }
+      .match-score {
+        background: var(--accent-dim);
+        color: var(--accent);
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 6px;
+      }
+      .pub-card-body {
+        padding: 16px 20px;
+      }
+      .pub-card-desc {
+        font-size: 0.85rem;
+        color: var(--text-dim);
+        line-height: 1.5;
+        margin-bottom: 12px;
+      }
+      .pub-card-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 16px;
+      }
+      .pub-card-tags span {
+        padding: 3px 10px;
+        background: var(--navy);
+        border-radius: 12px;
+        font-size: 0.75rem;
+        color: var(--text-dim);
+      }
+      .pub-card-stats {
+        display: flex;
+        gap: 24px;
+        padding: 16px 20px;
+        border-top: 1px solid var(--navy-mid);
+        font-size: 0.8rem;
+      }
+      .pub-card-stats div {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .pub-card-stats .label {
+        color: var(--text-dim);
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .pub-card-stats .value {
+        color: var(--white);
+        font-weight: 600;
+      }
+      .pub-card-reason {
+        padding: 12px 20px;
+        background: var(--accent-dim);
+        font-size: 0.8rem;
+        color: var(--accent);
+        line-height: 1.4;
+        border-top: 1px solid rgba(0, 212, 170, 0.1);
+      }
+      .pub-card-reason strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
 
-/* ===== ORDER REVIEW ===== */
-.order-summary {
-  background: var(--navy);
-  border-radius: var(--radius-sm);
-  padding: 20px;
-  margin: 20px 0;
-}
-.order-row {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--navy-mid);
-  font-size: 0.9rem;
-}
-.order-row:last-child { border-bottom: none; }
-.order-row .label { color: var(--text-dim); }
-.order-row .value { color: var(--white); font-weight: 600; }
-.order-total { font-size: 1.1rem; }
-.order-total .value { color: var(--accent); font-size: 1.25rem; }
+      /* ===== ORDER REVIEW ===== */
+      .order-summary {
+        background: var(--navy);
+        border-radius: var(--radius-sm);
+        padding: 20px;
+        margin: 20px 0;
+      }
+      .order-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--navy-mid);
+        font-size: 0.9rem;
+      }
+      .order-row:last-child {
+        border-bottom: none;
+      }
+      .order-row .label {
+        color: var(--text-dim);
+      }
+      .order-row .value {
+        color: var(--white);
+        font-weight: 600;
+      }
+      .order-total {
+        font-size: 1.1rem;
+      }
+      .order-total .value {
+        color: var(--accent);
+        font-size: 1.25rem;
+      }
 
-/* ===== WALLET MODAL ===== */
-.modal-overlay {
-  display: none;
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(4px);
-  z-index: 200;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-.modal-overlay.show { display: flex; }
-.modal {
-  background: var(--navy-light);
-  border: 1px solid var(--navy-mid);
-  border-radius: 16px;
-  padding: 32px;
-  width: 100%;
-  max-width: 440px;
-  box-shadow: 0 24px 48px rgba(0,0,0,0.4);
-  animation: modalIn 0.3s ease;
-}
-@keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-.modal h3 { font-size: 1.25rem; color: var(--white); margin-bottom: 8px; }
-.modal .subtitle { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 24px; }
+      /* ===== WALLET MODAL ===== */
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        z-index: 200;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+      .modal-overlay.show {
+        display: flex;
+      }
+      .modal {
+        background: var(--navy-light);
+        border: 1px solid var(--navy-mid);
+        border-radius: 16px;
+        padding: 32px;
+        width: 100%;
+        max-width: 440px;
+        box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+        animation: modalIn 0.3s ease;
+      }
+      @keyframes modalIn {
+        from {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      .modal h3 {
+        font-size: 1.25rem;
+        color: var(--white);
+        margin-bottom: 8px;
+      }
+      .modal .subtitle {
+        color: var(--text-dim);
+        font-size: 0.9rem;
+        margin-bottom: 24px;
+      }
 
-/* ===== STREAMING TICKER ===== */
-.streaming-ticker {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: var(--accent);
-  font-variant-numeric: tabular-nums;
-}
-.ticker-symbol { font-size: 1rem; color: var(--text-dim); font-weight: 600; }
-.ticker-decimals { font-size: 1.5rem; color: rgba(0,212,170,0.7); }
+      /* ===== STREAMING TICKER ===== */
+      .streaming-ticker {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--accent);
+        font-variant-numeric: tabular-nums;
+      }
+      .ticker-symbol {
+        font-size: 1rem;
+        color: var(--text-dim);
+        font-weight: 600;
+      }
+      .ticker-decimals {
+        font-size: 1.5rem;
+        color: rgba(0, 212, 170, 0.7);
+      }
 
-/* ===== CAMPAIGN DASHBOARD ===== */
-.campaign-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 32px;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-.campaign-title { font-size: 1.5rem; font-weight: 700; color: var(--white); }
-.impression-display {
-  text-align: center;
-  padding: 32px;
-  margin-bottom: 24px;
-}
-.impression-count {
-  font-size: 3rem;
-  font-weight: 800;
-  color: var(--white);
-  font-variant-numeric: tabular-nums;
-}
-.impression-total { color: var(--text-dim); font-size: 1.1rem; }
+      /* ===== CAMPAIGN DASHBOARD ===== */
+      .campaign-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 32px;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+      .campaign-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--white);
+      }
+      .impression-display {
+        text-align: center;
+        padding: 32px;
+        margin-bottom: 24px;
+      }
+      .impression-count {
+        font-size: 3rem;
+        font-weight: 800;
+        color: var(--white);
+        font-variant-numeric: tabular-nums;
+      }
+      .impression-total {
+        color: var(--text-dim);
+        font-size: 1.1rem;
+      }
 
-/* ===== WALLET VIEW ===== */
-.wallet-big-balance {
-  text-align: center;
-  padding: 48px 0 32px;
-}
-.wallet-big-balance .amount {
-  font-size: 3rem;
-  font-weight: 800;
-  color: var(--white);
-}
-.wallet-big-balance .currency { color: var(--text-dim); font-size: 1.1rem; }
-.wallet-address {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--navy);
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-family: monospace;
-  font-size: 0.85rem;
-  color: var(--text-dim);
-  margin-top: 12px;
-}
+      /* ===== WALLET VIEW ===== */
+      .wallet-big-balance {
+        text-align: center;
+        padding: 48px 0 32px;
+      }
+      .wallet-big-balance .amount {
+        font-size: 3rem;
+        font-weight: 800;
+        color: var(--white);
+      }
+      .wallet-big-balance .currency {
+        color: var(--text-dim);
+        font-size: 1.1rem;
+      }
+      .wallet-address {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--navy);
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-family: monospace;
+        font-size: 0.85rem;
+        color: var(--text-dim);
+        margin-top: 12px;
+      }
 
-/* ===== DASHBOARD LAYOUT ===== */
-.dashboard { display: flex; min-height: calc(100vh - 64px); }
-.sidebar {
-  width: 240px;
-  background: var(--navy-light);
-  border-right: 1px solid var(--navy-mid);
-  padding: 24px 0;
-  flex-shrink: 0;
-}
-.sidebar-section { padding: 0 16px; margin-bottom: 24px; }
-.sidebar-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 8px; padding: 0 12px; }
-.sidebar-link {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  font-size: 0.9rem;
-  color: var(--text-dim);
-  cursor: pointer;
-  transition: var(--transition);
-  background: transparent;
-  width: 100%;
-  text-align: left;
-}
-.sidebar-link:hover { color: var(--text); background: var(--navy-mid); }
-.sidebar-link.active { color: var(--accent); background: var(--accent-dim); }
-.sidebar-icon { font-size: 1.1rem; width: 20px; text-align: center; }
-.main-content { flex: 1; padding: 32px; overflow-y: auto; }
+      /* ===== DASHBOARD LAYOUT ===== */
+      .dashboard {
+        display: flex;
+        min-height: calc(100vh - 64px);
+      }
+      .sidebar {
+        width: 240px;
+        background: var(--navy-light);
+        border-right: 1px solid var(--navy-mid);
+        padding: 24px 0;
+        flex-shrink: 0;
+      }
+      .sidebar-section {
+        padding: 0 16px;
+        margin-bottom: 24px;
+      }
+      .sidebar-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-dim);
+        margin-bottom: 8px;
+        padding: 0 12px;
+      }
+      .sidebar-link {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: var(--radius-sm);
+        font-size: 0.9rem;
+        color: var(--text-dim);
+        cursor: pointer;
+        transition: var(--transition);
+        background: transparent;
+        width: 100%;
+        text-align: left;
+      }
+      .sidebar-link:hover {
+        color: var(--text);
+        background: var(--navy-mid);
+      }
+      .sidebar-link.active {
+        color: var(--accent);
+        background: var(--accent-dim);
+      }
+      .sidebar-icon {
+        font-size: 1.1rem;
+        width: 20px;
+        text-align: center;
+      }
+      .main-content {
+        flex: 1;
+        padding: 32px;
+        overflow-y: auto;
+      }
 
-/* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-  .hero-features { grid-template-columns: 1fr; gap: 24px; }
-  .form-row { grid-template-columns: 1fr; }
-  .sidebar { display: none; }
-  .main-content { padding: 20px; }
-  .discovery-grid { grid-template-columns: 1fr; }
-  .stepper { flex-wrap: wrap; }
-}
+      /* ===== RESPONSIVE ===== */
+      @media (max-width: 768px) {
+        .hero-features {
+          grid-template-columns: 1fr;
+          gap: 24px;
+        }
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+        .sidebar {
+          display: none;
+        }
+        .main-content {
+          padding: 20px;
+        }
+        .discovery-grid {
+          grid-template-columns: 1fr;
+        }
+        .stepper {
+          flex-wrap: wrap;
+        }
+      }
 
-/* ===== PULSE ANIMATION ===== */
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-.pulse { animation: pulse 2s ease-in-out infinite; }
+      /* ===== PULSE ANIMATION ===== */
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+      .pulse {
+        animation: pulse 2s ease-in-out infinite;
+      }
 
-/* ===== SITE ANALYSIS RESULT ===== */
-.analysis-result {
-  background: var(--navy);
-  border: 1px solid var(--navy-mid);
-  border-radius: var(--radius-sm);
-  padding: 20px;
-  margin: 16px 0;
-}
-.analysis-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 0;
-  font-size: 0.9rem;
-}
-.analysis-row .label { color: var(--text-dim); }
-.analysis-row .value { color: var(--white); font-weight: 500; }
+      /* ===== SITE ANALYSIS RESULT ===== */
+      .analysis-result {
+        background: var(--navy);
+        border: 1px solid var(--navy-mid);
+        border-radius: var(--radius-sm);
+        padding: 20px;
+        margin: 16px 0;
+      }
+      .analysis-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        font-size: 0.9rem;
+      }
+      .analysis-row .label {
+        color: var(--text-dim);
+      }
+      .analysis-row .value {
+        color: var(--white);
+        font-weight: 500;
+      }
 
-/* ===== SUCCESS STATE ===== */
-.success-check {
-  width: 64px; height: 64px;
-  border-radius: 50%;
-  background: var(--accent-dim);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 2rem;
-  margin: 0 auto 20px;
-}
+      /* ===== SUCCESS STATE ===== */
+      .success-check {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: var(--accent-dim);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin: 0 auto 20px;
+      }
 
-/* ===== TIMELINE ===== */
-.timeline { padding: 0; list-style: none; }
-.timeline-item {
-  display: flex; gap: 16px;
-  padding-bottom: 20px;
-  position: relative;
-}
-.timeline-item::before {
-  content: '';
-  position: absolute;
-  left: 15px;
-  top: 32px;
-  bottom: 0;
-  width: 2px;
-  background: var(--navy-mid);
-}
-.timeline-item:last-child::before { display: none; }
-.timeline-dot {
-  width: 32px; height: 32px;
-  border-radius: 50%;
-  background: var(--accent-dim);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.8rem;
-  flex-shrink: 0;
-}
-.timeline-content { flex: 1; }
-.timeline-title { font-size: 0.9rem; color: var(--white); font-weight: 500; }
-.timeline-meta { font-size: 0.8rem; color: var(--text-dim); margin-top: 2px; }
-.timeline-amount { color: var(--accent); font-weight: 600; }
-</style>
-</head>
-<body>
-
-<!-- ========== SCREEN: LANDING ========== -->
-<div id="screen-landing" class="screen active">
-  <div class="topbar">
-    <div class="topbar-logo" onclick="goTo('landing')">Ad<span>Flow</span></div>
-    <div style="display:flex;gap:8px;">
-      <button class="btn btn-ghost btn-sm" onclick="startPublisher()">For Publishers</button>
-      <button class="btn btn-primary btn-sm" onclick="startAdvertiser()">For Advertisers</button>
-    </div>
-  </div>
-  <div class="landing-hero">
-    <h1>The Ad Marketplace for the <em>Open Web</em></h1>
-    <p>Agent-powered discovery, blockchain-secured payments. Connect niche publishers with the right advertisers — no gatekeepers, no 32% commissions.</p>
-    <div class="hero-buttons">
-      <button class="btn btn-primary btn-large" onclick="startPublisher()">I'm a Publisher</button>
-      <button class="btn btn-secondary btn-large" onclick="startAdvertiser()">I'm an Advertiser</button>
-    </div>
-    <div class="hero-features">
-      <div class="hero-feature">
-        <div class="hero-feature-icon">&#x1f916;</div>
-        <h3>Agent Matching</h3>
-        <p>AI agents discover and verify the perfect publisher-advertiser fit automatically</p>
-      </div>
-      <div class="hero-feature">
-        <div class="hero-feature-icon">&#x26a1;</div>
-        <h3>Streaming Payments</h3>
-        <p>USDC flows to publishers per 1,000 impressions — no 30-day wait</p>
-      </div>
-      <div class="hero-feature">
-        <div class="hero-feature-icon">&#x1f512;</div>
-        <h3>Escrow Protection</h3>
-        <p>Funds locked in smart contracts — neither party can seize them</p>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ========== SCREEN: PUBLISHER ONBOARDING ========== -->
-<div id="screen-pub-onboard" class="screen">
-  <div class="topbar">
-    <div class="topbar-logo" onclick="goTo('landing')">Ad<span>Flow</span></div>
-    <span style="color:var(--text-dim);font-size:0.9rem;">Publisher Onboarding</span>
-  </div>
-  <div class="onboard-wrap">
-    <div class="onboard-card">
-      <!-- Stepper -->
-      <div class="stepper">
-        <div class="step" id="pub-step-1"><div class="step-num">1</div><span>Sign Up</span></div>
-        <div class="step-line" id="pub-line-1"></div>
-        <div class="step" id="pub-step-2"><div class="step-num">2</div><span>Your Site</span></div>
-        <div class="step-line" id="pub-line-2"></div>
-        <div class="step" id="pub-step-3"><div class="step-num">3</div><span>Ad Prefs</span></div>
-      </div>
-
-      <!-- Step 1: Email -->
-      <div id="pub-s1">
-        <h2>Welcome, Publisher</h2>
-        <p class="subtitle">Enter your email to get started. We'll create a wallet for you automatically.</p>
-        <div class="form-group">
-          <label class="form-label">Email Address</label>
-          <input type="email" id="pub-email" placeholder="you@yoursite.com">
+      /* ===== TIMELINE ===== */
+      .timeline {
+        padding: 0;
+        list-style: none;
+      }
+      .timeline-item {
+        display: flex;
+        gap: 16px;
+        padding-bottom: 20px;
+        position: relative;
+      }
+      .timeline-item::before {
+        content: "";
+        position: absolute;
+        left: 15px;
+        top: 32px;
+        bottom: 0;
+        width: 2px;
+        background: var(--navy-mid);
+      }
+      .timeline-item:last-child::before {
+        display: none;
+      }
+      .timeline-dot {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--accent-dim);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        flex-shrink: 0;
+      }
+      .timeline-content {
+        flex: 1;
+      }
+      .timeline-title {
+        font-size: 0.9rem;
+        color: var(--white);
+        font-weight: 500;
+      }
+      .timeline-meta {
+        font-size: 0.8rem;
+        color: var(--text-dim);
+        margin-top: 2px;
+      }
+      .timeline-amount {
+        color: var(--accent);
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ========== SCREEN: LANDING ========== -->
+    <div id="screen-landing" class="screen active">
+      <div class="topbar">
+        <div class="topbar-logo" onclick="goTo('landing')">Ad<span>Flow</span></div>
+        <div style="display: flex; gap: 8px">
+          <button class="btn btn-ghost btn-sm" onclick="startPublisher()">For Publishers</button>
+          <button class="btn btn-primary btn-sm" onclick="startAdvertiser()">For Advertisers</button>
         </div>
-        <button class="btn btn-primary btn-block" onclick="pubStep2()">Continue</button>
-        <p class="form-hint" style="text-align:center;margin-top:16px;">Powered by Dynamic — no crypto wallet needed</p>
       </div>
-
-      <!-- Step 2: Site URL + Analysis -->
-      <div id="pub-s2" style="display:none;">
-        <h2>Tell Us About Your Site</h2>
-        <p class="subtitle">Our agent will analyze your site to create the perfect listing.</p>
-        <div class="form-group">
-          <label class="form-label">Website URL</label>
-          <input type="url" id="pub-url" placeholder="https://yourblog.com" value="https://arabicacoffee.blog">
+      <div class="landing-hero">
+        <h1>The Ad Marketplace for the <em>Open Web</em></h1>
+        <p>
+          Agent-powered discovery, blockchain-secured payments. Connect niche publishers with the right advertisers — no
+          gatekeepers, no 32% commissions.
+        </p>
+        <div class="hero-buttons">
+          <button class="btn btn-primary btn-large" onclick="startPublisher()">I'm a Publisher</button>
+          <button class="btn btn-secondary btn-large" onclick="startAdvertiser()">I'm an Advertiser</button>
         </div>
-        <button class="btn btn-primary btn-block" id="pub-analyze-btn" onclick="pubAnalyze()">Analyze My Site</button>
+        <div class="hero-features">
+          <div class="hero-feature">
+            <div class="hero-feature-icon">&#x1f916;</div>
+            <h3>Agent Matching</h3>
+            <p>AI agents discover and verify the perfect publisher-advertiser fit automatically</p>
+          </div>
+          <div class="hero-feature">
+            <div class="hero-feature-icon">&#x26a1;</div>
+            <h3>Streaming Payments</h3>
+            <p>USDC flows to publishers per 1,000 impressions — no 30-day wait</p>
+          </div>
+          <div class="hero-feature">
+            <div class="hero-feature-icon">&#x1f512;</div>
+            <h3>Escrow Protection</h3>
+            <p>Funds locked in smart contracts — neither party can seize them</p>
+          </div>
+        </div>
+      </div>
+    </div>
 
-        <!-- Agent loading -->
-        <div id="pub-agent-loading" style="display:none;">
+    <!-- ========== SCREEN: PUBLISHER ONBOARDING ========== -->
+    <div id="screen-pub-onboard" class="screen">
+      <div class="topbar">
+        <div class="topbar-logo" onclick="goTo('landing')">Ad<span>Flow</span></div>
+        <span style="color: var(--text-dim); font-size: 0.9rem">Publisher Onboarding</span>
+      </div>
+      <div class="onboard-wrap">
+        <div class="onboard-card">
+          <!-- Stepper -->
+          <div class="stepper">
+            <div class="step" id="pub-step-1">
+              <div class="step-num">1</div>
+              <span>Sign Up</span>
+            </div>
+            <div class="step-line" id="pub-line-1"></div>
+            <div class="step" id="pub-step-2">
+              <div class="step-num">2</div>
+              <span>Your Site</span>
+            </div>
+            <div class="step-line" id="pub-line-2"></div>
+            <div class="step" id="pub-step-3">
+              <div class="step-num">3</div>
+              <span>Ad Prefs</span>
+            </div>
+          </div>
+
+          <!-- Step 1: Email -->
+          <div id="pub-s1">
+            <h2>Welcome, Publisher</h2>
+            <p class="subtitle">Enter your email to get started. We'll create a wallet for you automatically.</p>
+            <div class="form-group">
+              <label class="form-label">Email Address</label>
+              <input type="email" id="pub-email" placeholder="you@yoursite.com" />
+            </div>
+            <button class="btn btn-primary btn-block" onclick="pubStep2()">Continue</button>
+            <p class="form-hint" style="text-align: center; margin-top: 16px">
+              Powered by Dynamic — no crypto wallet needed
+            </p>
+          </div>
+
+          <!-- Step 2: Site URL + Analysis -->
+          <div id="pub-s2" style="display: none">
+            <h2>Tell Us About Your Site</h2>
+            <p class="subtitle">Our agent will analyze your site to create the perfect listing.</p>
+            <div class="form-group">
+              <label class="form-label">Website URL</label>
+              <input type="url" id="pub-url" placeholder="https://yourblog.com" value="https://arabicacoffee.blog" />
+            </div>
+            <button class="btn btn-primary btn-block" id="pub-analyze-btn" onclick="pubAnalyze()">
+              Analyze My Site
+            </button>
+
+            <!-- Agent loading -->
+            <div id="pub-agent-loading" style="display: none">
+              <div class="agent-loading">
+                <div class="agent-spinner"></div>
+                <div class="agent-status">Agent is analyzing your site...</div>
+                <div class="agent-log" id="pub-agent-log"></div>
+              </div>
+            </div>
+
+            <!-- Analysis result -->
+            <div id="pub-analysis-result" style="display: none">
+              <div class="analysis-result">
+                <div class="analysis-row">
+                  <span class="label">Category</span><span class="value">Food & Beverage — Specialty Coffee</span>
+                </div>
+                <div class="analysis-row">
+                  <span class="label">Content Focus</span
+                  ><span class="value">Arabic coffee culture, brewing guides, bean reviews</span>
+                </div>
+                <div class="analysis-row"><span class="label">Language</span><span class="value">English</span></div>
+                <div class="analysis-row">
+                  <span class="label">Est. Monthly Traffic</span><span class="value">~12,000 visitors</span>
+                </div>
+                <div class="analysis-row">
+                  <span class="label">Audience</span><span class="value">Coffee enthusiasts, ages 25-45</span>
+                </div>
+                <div class="analysis-row">
+                  <span class="label">Quality Score</span
+                  ><span class="value" style="color: var(--accent)">8.4 / 10</span>
+                </div>
+              </div>
+              <button class="btn btn-primary btn-block" onclick="pubStep3()" style="margin-top: 16px">
+                Looks Good — Continue
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 3: Ad Preferences -->
+          <div id="pub-s3" style="display: none">
+            <h2>Set Your Ad Preferences</h2>
+            <p class="subtitle">Define how ads appear on your site and your pricing.</p>
+            <div class="form-group">
+              <label class="form-label">Floor Price (per 1,000 impressions)</label>
+              <div style="position: relative">
+                <input type="number" id="pub-price" placeholder="4.00" value="4.00" style="padding-left: 48px" />
+                <span
+                  style="
+                    position: absolute;
+                    left: 16px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: var(--text-dim);
+                    font-weight: 600;
+                  "
+                  >$</span
+                >
+              </div>
+              <p class="form-hint">Advertisers pay at least this amount per 1K impressions</p>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Ad Format</label>
+              <select id="pub-format">
+                <option>Banner (728x90)</option>
+                <option>Sidebar (300x250)</option>
+                <option selected>Both</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Content Policies — Block These Categories</label>
+              <div class="checkbox-group">
+                <button class="tag-check selected" onclick="toggleTag(this)">Gambling</button>
+                <button class="tag-check" onclick="toggleTag(this)">Adult Content</button>
+                <button class="tag-check selected" onclick="toggleTag(this)">Crypto Trading</button>
+                <button class="tag-check" onclick="toggleTag(this)">Political Ads</button>
+                <button class="tag-check" onclick="toggleTag(this)">Alcohol</button>
+                <button class="tag-check" onclick="toggleTag(this)">Firearms</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Preferred Advertiser Types</label>
+              <div class="checkbox-group">
+                <button class="tag-check selected" onclick="toggleTag(this)">SaaS / Software</button>
+                <button class="tag-check selected" onclick="toggleTag(this)">E-commerce</button>
+                <button class="tag-check" onclick="toggleTag(this)">Education</button>
+                <button class="tag-check selected" onclick="toggleTag(this)">Food & Beverage</button>
+                <button class="tag-check" onclick="toggleTag(this)">Any</button>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-block" onclick="pubGoLive()">Publish Listing</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== SCREEN: PUBLISHER DASHBOARD ========== -->
+    <div id="screen-pub-dashboard" class="screen">
+      <div class="topbar">
+        <div class="topbar-logo" onclick="goTo('landing')">Ad<span>Flow</span></div>
+        <div class="topbar-nav">
+          <button class="active" onclick="showPubTab('overview')">Dashboard</button>
+          <button onclick="showPubTab('campaigns')">Campaigns</button>
+          <button onclick="goTo('wallet-pub')">Wallet</button>
+        </div>
+        <div class="topbar-wallet">
+          <div class="wallet-dot"></div>
+          <span>0x7a3f...c92d</span>
+          <span class="wallet-balance">$142.80</span>
+        </div>
+      </div>
+      <div class="container" style="padding-top: 32px; padding-bottom: 48px">
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 16px;
+          "
+        >
+          <div>
+            <h1 style="font-size: 1.75rem; font-weight: 700; color: var(--white)">Publisher Dashboard</h1>
+            <p style="color: var(--text-dim); margin-top: 4px">arabicacoffee.blog</p>
+          </div>
+          <span class="badge badge-green">Listing Active</span>
+        </div>
+
+        <!-- Revenue Ticker -->
+        <div class="card" style="margin-bottom: 24px; text-align: center; padding: 32px">
+          <div
+            style="
+              font-size: 0.8rem;
+              color: var(--text-dim);
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+              margin-bottom: 8px;
+            "
+          >
+            Total Revenue Earned
+          </div>
+          <div class="streaming-ticker">
+            <span class="ticker-symbol">$</span>
+            <span id="pub-ticker-whole">142</span>
+            <span class="ticker-decimals">.<span id="pub-ticker-dec">80</span></span>
+            <span class="ticker-symbol" style="margin-left: 4px">USDC</span>
+          </div>
+          <div style="color: var(--text-dim); font-size: 0.85rem; margin-top: 8px">
+            Streaming in real-time as impressions are served
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stat-grid">
+          <div class="card stat-card">
+            <div class="stat-value">35,700</div>
+            <div class="stat-label">Impressions Served</div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-value">$4.00</div>
+            <div class="stat-label">Price / 1K Impressions</div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-value">2</div>
+            <div class="stat-label">Active Campaigns</div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-value">$57.20</div>
+            <div class="stat-label">Remaining in Escrow</div>
+          </div>
+        </div>
+
+        <!-- Active Campaigns -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Active Campaigns</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Advertiser</th>
+                  <th>Impressions</th>
+                  <th>Progress</th>
+                  <th>Revenue</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <strong style="color: var(--white)">BeanBox Coffee Co.</strong><br /><span
+                      style="font-size: 0.8rem; color: var(--text-dim)"
+                      >E-commerce — Coffee subscriptions</span
+                    >
+                  </td>
+                  <td>22,400 / 50,000</td>
+                  <td>
+                    <div class="progress-bar" style="width: 120px">
+                      <div class="progress-fill" style="width: 44.8%"></div>
+                    </div>
+                  </td>
+                  <td style="color: var(--accent); font-weight: 600">$89.60</td>
+                  <td><span class="badge badge-green">Active</span></td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong style="color: var(--white)">BrewMaster App</strong><br /><span
+                      style="font-size: 0.8rem; color: var(--text-dim)"
+                      >SaaS — Coffee brewing assistant</span
+                    >
+                  </td>
+                  <td>13,300 / 25,000</td>
+                  <td>
+                    <div class="progress-bar" style="width: 120px">
+                      <div class="progress-fill" style="width: 53.2%"></div>
+                    </div>
+                  </td>
+                  <td style="color: var(--accent); font-weight: 600">$53.20</td>
+                  <td><span class="badge badge-green">Active</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== SCREEN: ADVERTISER ONBOARDING ========== -->
+    <div id="screen-adv-onboard" class="screen">
+      <div class="topbar">
+        <div class="topbar-logo" onclick="goTo('landing')">Ad<span>Flow</span></div>
+        <span style="color: var(--text-dim); font-size: 0.9rem">Advertiser Onboarding</span>
+      </div>
+      <div class="onboard-wrap">
+        <div class="onboard-card">
+          <!-- Stepper -->
+          <div class="stepper">
+            <div class="step" id="adv-step-1">
+              <div class="step-num">1</div>
+              <span>Sign Up</span>
+            </div>
+            <div class="step-line" id="adv-line-1"></div>
+            <div class="step" id="adv-step-2">
+              <div class="step-num">2</div>
+              <span>Campaign</span>
+            </div>
+          </div>
+
+          <!-- Step 1: Email -->
+          <div id="adv-s1">
+            <h2>Welcome, Advertiser</h2>
+            <p class="subtitle">Enter your email to start discovering niche publishers for your brand.</p>
+            <div class="form-group">
+              <label class="form-label">Email Address</label>
+              <input type="email" id="adv-email" placeholder="you@company.com" />
+            </div>
+            <button class="btn btn-primary btn-block" onclick="advStep2()">Continue</button>
+            <p class="form-hint" style="text-align: center; margin-top: 16px">
+              Powered by Dynamic — no crypto wallet needed
+            </p>
+          </div>
+
+          <!-- Step 2: Campaign Brief -->
+          <div id="adv-s2" style="display: none">
+            <h2>Describe Your Campaign</h2>
+            <p class="subtitle">Tell our agent what you're looking for — in plain English.</p>
+            <div class="form-group">
+              <label class="form-label">What are you promoting?</label>
+              <input
+                type="text"
+                id="adv-product"
+                placeholder="e.g., BeanBox — premium coffee subscription service"
+                value="BeanBox — premium coffee subscription"
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Target Audience (describe naturally)</label>
+              <textarea
+                id="adv-audience"
+                rows="3"
+                placeholder="e.g., Find me English-language websites about specialty coffee, brewing, or coffee culture. My audience is coffee enthusiasts aged 25-45."
+              >
+Find me English-language websites specializing in Arabic coffee, specialty brewing, or coffee culture. Target audience: coffee enthusiasts aged 25-45.</textarea
+              >
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Budget (USDC)</label>
+                <div style="position: relative">
+                  <input type="number" id="adv-budget" placeholder="200" value="200" style="padding-left: 48px" />
+                  <span
+                    style="
+                      position: absolute;
+                      left: 16px;
+                      top: 50%;
+                      transform: translateY(-50%);
+                      color: var(--text-dim);
+                      font-weight: 600;
+                    "
+                    >$</span
+                  >
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Target Impressions</label>
+                <input type="number" id="adv-impressions" placeholder="50000" value="50000" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Ad Creative</label>
+              <div
+                style="
+                  border: 2px dashed var(--navy-mid);
+                  border-radius: var(--radius-sm);
+                  padding: 32px;
+                  text-align: center;
+                  cursor: pointer;
+                "
+                onclick="this.style.borderColor='var(--accent)';this.innerHTML='<div style=color:var(--accent);font-weight:600>beanbox-banner-728x90.png</div><div style=color:var(--text-dim);font-size:0.85rem;margin-top:4px>Ready to upload</div>'"
+              >
+                <div style="font-size: 1.5rem; margin-bottom: 8px">&#x1f4ce;</div>
+                <div style="color: var(--text-dim); font-size: 0.9rem">
+                  Drop your banner image here or click to browse
+                </div>
+                <div style="color: var(--gray-400); font-size: 0.8rem; margin-top: 4px">728x90 or 300x250 PNG/JPG</div>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-block" onclick="advDiscover()">Find Publishers</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== SCREEN: DISCOVERY ========== -->
+    <div id="screen-discovery" class="screen">
+      <div class="topbar">
+        <div class="topbar-logo" onclick="goTo('landing')">Ad<span>Flow</span></div>
+        <div class="topbar-nav">
+          <button class="active">Discovery</button>
+          <button onclick="goTo('adv-dashboard')">Campaigns</button>
+          <button onclick="goTo('wallet-adv')">Wallet</button>
+        </div>
+        <div class="topbar-wallet">
+          <div class="wallet-dot"></div>
+          <span>0x4b2e...a81f</span>
+          <span class="wallet-balance">$500.00</span>
+        </div>
+      </div>
+      <div class="container" style="padding-top: 32px; padding-bottom: 48px">
+        <!-- Agent Search State -->
+        <div id="discovery-searching">
+          <div style="text-align: center; margin-bottom: 40px">
+            <h1 style="font-size: 1.5rem; color: var(--white); margin-bottom: 8px">Agent is Finding Publishers</h1>
+            <p style="color: var(--text-dim)">Searching marketplace for sites matching your campaign brief...</p>
+          </div>
           <div class="agent-loading">
             <div class="agent-spinner"></div>
-            <div class="agent-status">Agent is analyzing your site...</div>
-            <div class="agent-log" id="pub-agent-log"></div>
+            <div class="agent-log" id="discovery-agent-log" style="max-width: 600px"></div>
           </div>
         </div>
 
-        <!-- Analysis result -->
-        <div id="pub-analysis-result" style="display:none;">
-          <div class="analysis-result">
-            <div class="analysis-row"><span class="label">Category</span><span class="value">Food & Beverage — Specialty Coffee</span></div>
-            <div class="analysis-row"><span class="label">Content Focus</span><span class="value">Arabic coffee culture, brewing guides, bean reviews</span></div>
-            <div class="analysis-row"><span class="label">Language</span><span class="value">English</span></div>
-            <div class="analysis-row"><span class="label">Est. Monthly Traffic</span><span class="value">~12,000 visitors</span></div>
-            <div class="analysis-row"><span class="label">Audience</span><span class="value">Coffee enthusiasts, ages 25-45</span></div>
-            <div class="analysis-row"><span class="label">Quality Score</span><span class="value" style="color:var(--accent);">8.4 / 10</span></div>
+        <!-- Results -->
+        <div id="discovery-results" style="display: none">
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              margin-bottom: 24px;
+              flex-wrap: wrap;
+              gap: 16px;
+            "
+          >
+            <div>
+              <h1 style="font-size: 1.5rem; color: var(--white); margin-bottom: 4px">3 Publishers Found</h1>
+              <p style="color: var(--text-dim); font-size: 0.9rem">
+                Ranked by relevance to: "Arabic coffee, specialty brewing, coffee culture"
+              </p>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="advDiscover()">Refine Search</button>
           </div>
-          <button class="btn btn-primary btn-block" onclick="pubStep3()" style="margin-top:16px;">Looks Good — Continue</button>
-        </div>
-      </div>
 
-      <!-- Step 3: Ad Preferences -->
-      <div id="pub-s3" style="display:none;">
-        <h2>Set Your Ad Preferences</h2>
-        <p class="subtitle">Define how ads appear on your site and your pricing.</p>
-        <div class="form-group">
-          <label class="form-label">Floor Price (per 1,000 impressions)</label>
-          <div style="position:relative;">
-            <input type="number" id="pub-price" placeholder="4.00" value="4.00" style="padding-left:48px;">
-            <span style="position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-weight:600;">$</span>
-          </div>
-          <p class="form-hint">Advertisers pay at least this amount per 1K impressions</p>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Ad Format</label>
-          <select id="pub-format">
-            <option>Banner (728x90)</option>
-            <option>Sidebar (300x250)</option>
-            <option selected>Both</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Content Policies — Block These Categories</label>
-          <div class="checkbox-group">
-            <button class="tag-check selected" onclick="toggleTag(this)">Gambling</button>
-            <button class="tag-check" onclick="toggleTag(this)">Adult Content</button>
-            <button class="tag-check selected" onclick="toggleTag(this)">Crypto Trading</button>
-            <button class="tag-check" onclick="toggleTag(this)">Political Ads</button>
-            <button class="tag-check" onclick="toggleTag(this)">Alcohol</button>
-            <button class="tag-check" onclick="toggleTag(this)">Firearms</button>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Preferred Advertiser Types</label>
-          <div class="checkbox-group">
-            <button class="tag-check selected" onclick="toggleTag(this)">SaaS / Software</button>
-            <button class="tag-check selected" onclick="toggleTag(this)">E-commerce</button>
-            <button class="tag-check" onclick="toggleTag(this)">Education</button>
-            <button class="tag-check selected" onclick="toggleTag(this)">Food & Beverage</button>
-            <button class="tag-check" onclick="toggleTag(this)">Any</button>
-          </div>
-        </div>
-        <button class="btn btn-primary btn-block" onclick="pubGoLive()">Publish Listing</button>
-      </div>
-    </div>
-  </div>
-</div>
+          <div class="discovery-grid">
+            <!-- Publisher 1 -->
+            <div class="pub-card" onclick="selectPublisher(0)">
+              <div class="pub-card-header">
+                <div class="pub-card-site">
+                  <div class="pub-card-favicon">&#x2615;</div>
+                  <div>
+                    <div class="pub-card-name">Arabica Coffee Blog</div>
+                    <div class="pub-card-url">arabicacoffee.blog</div>
+                  </div>
+                </div>
+                <div class="match-score">97% match</div>
+              </div>
+              <div class="pub-card-body">
+                <div class="pub-card-desc">
+                  Deep-dive content on Arabic coffee culture, traditional brewing methods, single-origin bean reviews,
+                  and specialty coffee guides.
+                </div>
+                <div class="pub-card-tags">
+                  <span>Arabic Coffee</span>
+                  <span>Brewing Guides</span>
+                  <span>Bean Reviews</span>
+                  <span>Coffee Culture</span>
+                </div>
+              </div>
+              <div class="pub-card-stats">
+                <div><span class="label">Price / 1K</span><span class="value">$4.00</span></div>
+                <div><span class="label">Available</span><span class="value">50,000 impr.</span></div>
+                <div><span class="label">Monthly Traffic</span><span class="value">~12K</span></div>
+                <div><span class="label">Quality</span><span class="value" style="color: var(--accent)">8.4</span></div>
+              </div>
+              <div class="pub-card-reason">
+                <strong>Agent Reasoning</strong>
+                Exact category match — site focuses exclusively on Arabic coffee culture and specialty brewing. Audience
+                demographics align (25-45 coffee enthusiasts). High content quality score. Price within budget at $4.00
+                CPM.
+              </div>
+            </div>
 
-<!-- ========== SCREEN: PUBLISHER DASHBOARD ========== -->
-<div id="screen-pub-dashboard" class="screen">
-  <div class="topbar">
-    <div class="topbar-logo" onclick="goTo('landing')">Ad<span>Flow</span></div>
-    <div class="topbar-nav">
-      <button class="active" onclick="showPubTab('overview')">Dashboard</button>
-      <button onclick="showPubTab('campaigns')">Campaigns</button>
-      <button onclick="goTo('wallet-pub')">Wallet</button>
-    </div>
-    <div class="topbar-wallet">
-      <div class="wallet-dot"></div>
-      <span>0x7a3f...c92d</span>
-      <span class="wallet-balance">$142.80</span>
-    </div>
-  </div>
-  <div class="container" style="padding-top:32px;padding-bottom:48px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:16px;">
-      <div>
-        <h1 style="font-size:1.75rem;font-weight:700;color:var(--white);">Publisher Dashboard</h1>
-        <p style="color:var(--text-dim);margin-top:4px;">arabicacoffee.blog</p>
-      </div>
-      <span class="badge badge-green">Listing Active</span>
-    </div>
+            <!-- Publisher 2 -->
+            <div class="pub-card" onclick="selectPublisher(1)">
+              <div class="pub-card-header">
+                <div class="pub-card-site">
+                  <div class="pub-card-favicon">&#x1f331;</div>
+                  <div>
+                    <div class="pub-card-name">Specialty Roasters Weekly</div>
+                    <div class="pub-card-url">specialtyroasters.co</div>
+                  </div>
+                </div>
+                <div class="match-score">82% match</div>
+              </div>
+              <div class="pub-card-body">
+                <div class="pub-card-desc">
+                  Weekly newsletter and blog covering specialty coffee roasters worldwide, industry news, and cupping
+                  scores.
+                </div>
+                <div class="pub-card-tags">
+                  <span>Specialty Coffee</span>
+                  <span>Roasters</span>
+                  <span>Industry News</span>
+                </div>
+              </div>
+              <div class="pub-card-stats">
+                <div><span class="label">Price / 1K</span><span class="value">$5.50</span></div>
+                <div><span class="label">Available</span><span class="value">30,000 impr.</span></div>
+                <div><span class="label">Monthly Traffic</span><span class="value">~8K</span></div>
+                <div><span class="label">Quality</span><span class="value" style="color: var(--accent)">7.9</span></div>
+              </div>
+              <div class="pub-card-reason">
+                <strong>Agent Reasoning</strong>
+                Strong category overlap — specialty coffee focus with engaged reader base. Slightly higher CPM but
+                excellent audience engagement metrics. Not exclusively Arabic coffee.
+              </div>
+            </div>
 
-    <!-- Revenue Ticker -->
-    <div class="card" style="margin-bottom:24px;text-align:center;padding:32px;">
-      <div style="font-size:0.8rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Total Revenue Earned</div>
-      <div class="streaming-ticker">
-        <span class="ticker-symbol">$</span>
-        <span id="pub-ticker-whole">142</span>
-        <span class="ticker-decimals">.<span id="pub-ticker-dec">80</span></span>
-        <span class="ticker-symbol" style="margin-left:4px;">USDC</span>
-      </div>
-      <div style="color:var(--text-dim);font-size:0.85rem;margin-top:8px;">Streaming in real-time as impressions are served</div>
-    </div>
-
-    <!-- Stats -->
-    <div class="stat-grid">
-      <div class="card stat-card">
-        <div class="stat-value">35,700</div>
-        <div class="stat-label">Impressions Served</div>
-      </div>
-      <div class="card stat-card">
-        <div class="stat-value">$4.00</div>
-        <div class="stat-label">Price / 1K Impressions</div>
-      </div>
-      <div class="card stat-card">
-        <div class="stat-value">2</div>
-        <div class="stat-label">Active Campaigns</div>
-      </div>
-      <div class="card stat-card">
-        <div class="stat-value">$57.20</div>
-        <div class="stat-label">Remaining in Escrow</div>
-      </div>
-    </div>
-
-    <!-- Active Campaigns -->
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Active Campaigns</span>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Advertiser</th><th>Impressions</th><th>Progress</th><th>Revenue</th><th>Status</th></tr></thead>
-          <tbody>
-            <tr>
-              <td><strong style="color:var(--white);">BeanBox Coffee Co.</strong><br><span style="font-size:0.8rem;color:var(--text-dim);">E-commerce — Coffee subscriptions</span></td>
-              <td>22,400 / 50,000</td>
-              <td><div class="progress-bar" style="width:120px;"><div class="progress-fill" style="width:44.8%;"></div></div></td>
-              <td style="color:var(--accent);font-weight:600;">$89.60</td>
-              <td><span class="badge badge-green">Active</span></td>
-            </tr>
-            <tr>
-              <td><strong style="color:var(--white);">BrewMaster App</strong><br><span style="font-size:0.8rem;color:var(--text-dim);">SaaS — Coffee brewing assistant</span></td>
-              <td>13,300 / 25,000</td>
-              <td><div class="progress-bar" style="width:120px;"><div class="progress-fill" style="width:53.2%;"></div></div></td>
-              <td style="color:var(--accent);font-weight:600;">$53.20</td>
-              <td><span class="badge badge-green">Active</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ========== SCREEN: ADVERTISER ONBOARDING ========== -->
-<div id="screen-adv-onboard" class="screen">
-  <div class="topbar">
-    <div class="topbar-logo" onclick="goTo('landing')">Ad<span>Flow</span></div>
-    <span style="color:var(--text-dim);font-size:0.9rem;">Advertiser Onboarding</span>
-  </div>
-  <div class="onboard-wrap">
-    <div class="onboard-card">
-      <!-- Stepper -->
-      <div class="stepper">
-        <div class="step" id="adv-step-1"><div class="step-num">1</div><span>Sign Up</span></div>
-        <div class="step-line" id="adv-line-1"></div>
-        <div class="step" id="adv-step-2"><div class="step-num">2</div><span>Campaign</span></div>
-      </div>
-
-      <!-- Step 1: Email -->
-      <div id="adv-s1">
-        <h2>Welcome, Advertiser</h2>
-        <p class="subtitle">Enter your email to start discovering niche publishers for your brand.</p>
-        <div class="form-group">
-          <label class="form-label">Email Address</label>
-          <input type="email" id="adv-email" placeholder="you@company.com">
-        </div>
-        <button class="btn btn-primary btn-block" onclick="advStep2()">Continue</button>
-        <p class="form-hint" style="text-align:center;margin-top:16px;">Powered by Dynamic — no crypto wallet needed</p>
-      </div>
-
-      <!-- Step 2: Campaign Brief -->
-      <div id="adv-s2" style="display:none;">
-        <h2>Describe Your Campaign</h2>
-        <p class="subtitle">Tell our agent what you're looking for — in plain English.</p>
-        <div class="form-group">
-          <label class="form-label">What are you promoting?</label>
-          <input type="text" id="adv-product" placeholder="e.g., BeanBox — premium coffee subscription service" value="BeanBox — premium coffee subscription">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Target Audience (describe naturally)</label>
-          <textarea id="adv-audience" rows="3" placeholder="e.g., Find me English-language websites about specialty coffee, brewing, or coffee culture. My audience is coffee enthusiasts aged 25-45.">Find me English-language websites specializing in Arabic coffee, specialty brewing, or coffee culture. Target audience: coffee enthusiasts aged 25-45.</textarea>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Budget (USDC)</label>
-            <div style="position:relative;">
-              <input type="number" id="adv-budget" placeholder="200" value="200" style="padding-left:48px;">
-              <span style="position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-weight:600;">$</span>
+            <!-- Publisher 3 -->
+            <div class="pub-card" onclick="selectPublisher(2)">
+              <div class="pub-card-header">
+                <div class="pub-card-site">
+                  <div class="pub-card-favicon">&#x1f3fa;</div>
+                  <div>
+                    <div class="pub-card-name">Middle Eastern Flavors</div>
+                    <div class="pub-card-url">meflavors.com</div>
+                  </div>
+                </div>
+                <div class="match-score">71% match</div>
+              </div>
+              <div class="pub-card-body">
+                <div class="pub-card-desc">
+                  Recipes, culture, and traditions around Middle Eastern cuisine including coffee, tea, and traditional
+                  beverages.
+                </div>
+                <div class="pub-card-tags">
+                  <span>Middle Eastern</span>
+                  <span>Cuisine</span>
+                  <span>Coffee & Tea</span>
+                  <span>Recipes</span>
+                </div>
+              </div>
+              <div class="pub-card-stats">
+                <div><span class="label">Price / 1K</span><span class="value">$3.00</span></div>
+                <div><span class="label">Available</span><span class="value">80,000 impr.</span></div>
+                <div><span class="label">Monthly Traffic</span><span class="value">~22K</span></div>
+                <div><span class="label">Quality</span><span class="value" style="color: var(--accent)">7.2</span></div>
+              </div>
+              <div class="pub-card-reason">
+                <strong>Agent Reasoning</strong>
+                Broader food site but has significant Arabic coffee content section. Lower CPM with higher traffic. Good
+                for volume but less targeted than top match.
+              </div>
             </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Target Impressions</label>
-            <input type="number" id="adv-impressions" placeholder="50000" value="50000">
-          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Ad Creative</label>
-          <div style="border:2px dashed var(--navy-mid);border-radius:var(--radius-sm);padding:32px;text-align:center;cursor:pointer;" onclick="this.style.borderColor='var(--accent)';this.innerHTML='<div style=color:var(--accent);font-weight:600>beanbox-banner-728x90.png</div><div style=color:var(--text-dim);font-size:0.85rem;margin-top:4px>Ready to upload</div>'">
-            <div style="font-size:1.5rem;margin-bottom:8px;">&#x1f4ce;</div>
-            <div style="color:var(--text-dim);font-size:0.9rem;">Drop your banner image here or click to browse</div>
-            <div style="color:var(--gray-400);font-size:0.8rem;margin-top:4px;">728x90 or 300x250 PNG/JPG</div>
-          </div>
+      </div>
+    </div>
+
+    <!-- ========== SCREEN: TRANSACTION ========== -->
+    <div id="screen-transaction" class="screen">
+      <div class="topbar">
+        <div class="topbar-logo" onclick="goTo('landing')">Ad<span>Flow</span></div>
+        <div class="topbar-nav">
+          <button onclick="goTo('discovery')">Discovery</button>
+          <button class="active">Order</button>
+          <button onclick="goTo('wallet-adv')">Wallet</button>
         </div>
-        <button class="btn btn-primary btn-block" onclick="advDiscover()">Find Publishers</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ========== SCREEN: DISCOVERY ========== -->
-<div id="screen-discovery" class="screen">
-  <div class="topbar">
-    <div class="topbar-logo" onclick="goTo('landing')">Ad<span>Flow</span></div>
-    <div class="topbar-nav">
-      <button class="active">Discovery</button>
-      <button onclick="goTo('adv-dashboard')">Campaigns</button>
-      <button onclick="goTo('wallet-adv')">Wallet</button>
-    </div>
-    <div class="topbar-wallet">
-      <div class="wallet-dot"></div>
-      <span>0x4b2e...a81f</span>
-      <span class="wallet-balance">$500.00</span>
-    </div>
-  </div>
-  <div class="container" style="padding-top:32px;padding-bottom:48px;">
-
-    <!-- Agent Search State -->
-    <div id="discovery-searching">
-      <div style="text-align:center;margin-bottom:40px;">
-        <h1 style="font-size:1.5rem;color:var(--white);margin-bottom:8px;">Agent is Finding Publishers</h1>
-        <p style="color:var(--text-dim);">Searching marketplace for sites matching your campaign brief...</p>
-      </div>
-      <div class="agent-loading">
-        <div class="agent-spinner"></div>
-        <div class="agent-log" id="discovery-agent-log" style="max-width:600px;"></div>
-      </div>
-    </div>
-
-    <!-- Results -->
-    <div id="discovery-results" style="display:none;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:16px;">
-        <div>
-          <h1 style="font-size:1.5rem;color:var(--white);margin-bottom:4px;">3 Publishers Found</h1>
-          <p style="color:var(--text-dim);font-size:0.9rem;">Ranked by relevance to: "Arabic coffee, specialty brewing, coffee culture"</p>
+        <div class="topbar-wallet">
+          <div class="wallet-dot"></div>
+          <span>0x4b2e...a81f</span>
+          <span class="wallet-balance">$500.00</span>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="advDiscover()">Refine Search</button>
       </div>
+      <div class="container-sm" style="padding-top: 48px; padding-bottom: 48px">
+        <!-- Order Review -->
+        <div id="tx-review">
+          <h1 style="font-size: 1.5rem; color: var(--white); margin-bottom: 8px">Review Order</h1>
+          <p style="color: var(--text-dim); margin-bottom: 24px">
+            Confirm your campaign details before funding the escrow.
+          </p>
 
-      <div class="discovery-grid">
-        <!-- Publisher 1 -->
-        <div class="pub-card" onclick="selectPublisher(0)">
-          <div class="pub-card-header">
-            <div class="pub-card-site">
+          <div class="card" style="margin-bottom: 24px">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px">
               <div class="pub-card-favicon">&#x2615;</div>
               <div>
-                <div class="pub-card-name">Arabica Coffee Blog</div>
-                <div class="pub-card-url">arabicacoffee.blog</div>
+                <div style="font-weight: 600; color: var(--white)">Arabica Coffee Blog</div>
+                <div style="font-size: 0.85rem; color: var(--text-dim)">arabicacoffee.blog</div>
               </div>
-            </div>
-            <div class="match-score">97% match</div>
-          </div>
-          <div class="pub-card-body">
-            <div class="pub-card-desc">Deep-dive content on Arabic coffee culture, traditional brewing methods, single-origin bean reviews, and specialty coffee guides.</div>
-            <div class="pub-card-tags">
-              <span>Arabic Coffee</span>
-              <span>Brewing Guides</span>
-              <span>Bean Reviews</span>
-              <span>Coffee Culture</span>
+              <div class="match-score" style="margin-left: auto">97% match</div>
             </div>
           </div>
-          <div class="pub-card-stats">
-            <div><span class="label">Price / 1K</span><span class="value">$4.00</span></div>
-            <div><span class="label">Available</span><span class="value">50,000 impr.</span></div>
-            <div><span class="label">Monthly Traffic</span><span class="value">~12K</span></div>
-            <div><span class="label">Quality</span><span class="value" style="color:var(--accent);">8.4</span></div>
+
+          <div class="order-summary">
+            <div class="order-row">
+              <span class="label">Impressions</span>
+              <span class="value">50,000</span>
+            </div>
+            <div class="order-row">
+              <span class="label">Price per 1,000 impressions</span>
+              <span class="value">$4.00</span>
+            </div>
+            <div class="order-row">
+              <span class="label">Ad Format</span>
+              <span class="value">Banner (728x90)</span>
+            </div>
+            <div class="order-row">
+              <span class="label">Payment Method</span>
+              <span class="value">USDC (Streaming)</span>
+            </div>
+            <div class="order-row">
+              <span class="label">Settlement</span>
+              <span class="value">Per 1,000 impressions</span>
+            </div>
+            <div class="order-row order-total">
+              <span class="label" style="font-weight: 600">Total Escrow Amount</span>
+              <span class="value">$200.00 USDC</span>
+            </div>
           </div>
-          <div class="pub-card-reason">
-            <strong>Agent Reasoning</strong>
-            Exact category match — site focuses exclusively on Arabic coffee culture and specialty brewing. Audience demographics align (25-45 coffee enthusiasts). High content quality score. Price within budget at $4.00 CPM.
+
+          <div
+            style="
+              background: var(--accent-dim);
+              border-radius: var(--radius-sm);
+              padding: 16px;
+              margin-bottom: 24px;
+              font-size: 0.85rem;
+              color: var(--accent);
+              line-height: 1.5;
+            "
+          >
+            Funds will be locked in a smart contract escrow. Payments stream to the publisher as impressions are
+            verified by Chainlink CRE. You can pause or dispute at any time.
           </div>
+
+          <button class="btn btn-primary btn-block btn-large" onclick="showWalletModal()">
+            Fund Escrow — $200.00 USDC
+          </button>
+          <button class="btn btn-ghost btn-block" style="margin-top: 12px" onclick="goTo('discovery')">
+            Back to Results
+          </button>
         </div>
 
-        <!-- Publisher 2 -->
-        <div class="pub-card" onclick="selectPublisher(1)">
-          <div class="pub-card-header">
-            <div class="pub-card-site">
-              <div class="pub-card-favicon">&#x1f331;</div>
-              <div>
-                <div class="pub-card-name">Specialty Roasters Weekly</div>
-                <div class="pub-card-url">specialtyroasters.co</div>
-              </div>
-            </div>
-            <div class="match-score">82% match</div>
+        <!-- Escrow Success -->
+        <div id="tx-success" style="display: none; text-align: center; padding: 40px 0">
+          <div class="success-check">&#x2713;</div>
+          <h2 style="color: var(--white); margin-bottom: 8px">Escrow Funded!</h2>
+          <p style="color: var(--text-dim); margin-bottom: 8px">$200.00 USDC locked in smart contract</p>
+          <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 32px">
+            Campaign will begin serving immediately. Payments stream per 1,000 impressions.
+          </p>
+          <div
+            style="
+              background: var(--navy);
+              border-radius: var(--radius-sm);
+              padding: 16px;
+              margin-bottom: 32px;
+              font-family: monospace;
+              font-size: 0.8rem;
+              color: var(--text-dim);
+              word-break: break-all;
+            "
+          >
+            Tx: 0x8f3a...7b2e4d91c6f0a3e8<br />
+            Contract: 0xAdFl...0wEscr0w<br />
+            Block: 18,442,691
           </div>
-          <div class="pub-card-body">
-            <div class="pub-card-desc">Weekly newsletter and blog covering specialty coffee roasters worldwide, industry news, and cupping scores.</div>
-            <div class="pub-card-tags">
-              <span>Specialty Coffee</span>
-              <span>Roasters</span>
-              <span>Industry News</span>
-            </div>
-          </div>
-          <div class="pub-card-stats">
-            <div><span class="label">Price / 1K</span><span class="value">$5.50</span></div>
-            <div><span class="label">Available</span><span class="value">30,000 impr.</span></div>
-            <div><span class="label">Monthly Traffic</span><span class="value">~8K</span></div>
-            <div><span class="label">Quality</span><span class="value" style="color:var(--accent);">7.9</span></div>
-          </div>
-          <div class="pub-card-reason">
-            <strong>Agent Reasoning</strong>
-            Strong category overlap — specialty coffee focus with engaged reader base. Slightly higher CPM but excellent audience engagement metrics. Not exclusively Arabic coffee.
-          </div>
-        </div>
-
-        <!-- Publisher 3 -->
-        <div class="pub-card" onclick="selectPublisher(2)">
-          <div class="pub-card-header">
-            <div class="pub-card-site">
-              <div class="pub-card-favicon">&#x1f3fa;</div>
-              <div>
-                <div class="pub-card-name">Middle Eastern Flavors</div>
-                <div class="pub-card-url">meflavors.com</div>
-              </div>
-            </div>
-            <div class="match-score">71% match</div>
-          </div>
-          <div class="pub-card-body">
-            <div class="pub-card-desc">Recipes, culture, and traditions around Middle Eastern cuisine including coffee, tea, and traditional beverages.</div>
-            <div class="pub-card-tags">
-              <span>Middle Eastern</span>
-              <span>Cuisine</span>
-              <span>Coffee & Tea</span>
-              <span>Recipes</span>
-            </div>
-          </div>
-          <div class="pub-card-stats">
-            <div><span class="label">Price / 1K</span><span class="value">$3.00</span></div>
-            <div><span class="label">Available</span><span class="value">80,000 impr.</span></div>
-            <div><span class="label">Monthly Traffic</span><span class="value">~22K</span></div>
-            <div><span class="label">Quality</span><span class="value" style="color:var(--accent);">7.2</span></div>
-          </div>
-          <div class="pub-card-reason">
-            <strong>Agent Reasoning</strong>
-            Broader food site but has significant Arabic coffee content section. Lower CPM with higher traffic. Good for volume but less targeted than top match.
-          </div>
+          <button class="btn btn-primary btn-large" onclick="goTo('adv-dashboard')">View Campaign Dashboard</button>
         </div>
       </div>
     </div>
-  </div>
-</div>
 
-<!-- ========== SCREEN: TRANSACTION ========== -->
-<div id="screen-transaction" class="screen">
-  <div class="topbar">
-    <div class="topbar-logo" onclick="goTo('landing')">Ad<span>Flow</span></div>
-    <div class="topbar-nav">
-      <button onclick="goTo('discovery')">Discovery</button>
-      <button class="active">Order</button>
-      <button onclick="goTo('wallet-adv')">Wallet</button>
+    <!-- ========== WALLET MODAL ========== -->
+    <div id="wallet-modal" class="modal-overlay" onclick="if(event.target===this)closeWalletModal()">
+      <div class="modal">
+        <div id="wallet-modal-confirm">
+          <h3>Confirm Transaction</h3>
+          <p class="subtitle">You're about to fund an escrow contract.</p>
+          <div class="order-summary" style="margin: 0 0 20px">
+            <div class="order-row">
+              <span class="label">From</span>
+              <span class="value" style="font-family: monospace; font-size: 0.85rem">0x4b2e...a81f</span>
+            </div>
+            <div class="order-row">
+              <span class="label">To</span>
+              <span class="value" style="font-family: monospace; font-size: 0.85rem">AdFlow Escrow Contract</span>
+            </div>
+            <div class="order-row">
+              <span class="label">Amount</span>
+              <span class="value" style="color: var(--accent)">200.00 USDC</span>
+            </div>
+            <div class="order-row">
+              <span class="label">Network Fee</span>
+              <span class="value">~$0.02</span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px">
+            <button class="btn btn-ghost" style="flex: 1" onclick="closeWalletModal()">Cancel</button>
+            <button class="btn btn-primary" style="flex: 2" onclick="confirmWalletTx()">Confirm & Sign</button>
+          </div>
+        </div>
+        <div id="wallet-modal-processing" style="display: none; text-align: center; padding: 20px 0">
+          <div class="agent-spinner" style="margin: 0 auto 16px"></div>
+          <p style="color: var(--text-dim)">Processing transaction...</p>
+        </div>
+      </div>
     </div>
-    <div class="topbar-wallet">
-      <div class="wallet-dot"></div>
-      <span>0x4b2e...a81f</span>
-      <span class="wallet-balance">$500.00</span>
-    </div>
-  </div>
-  <div class="container-sm" style="padding-top:48px;padding-bottom:48px;">
 
-    <!-- Order Review -->
-    <div id="tx-review">
-      <h1 style="font-size:1.5rem;color:var(--white);margin-bottom:8px;">Review Order</h1>
-      <p style="color:var(--text-dim);margin-bottom:24px;">Confirm your campaign details before funding the escrow.</p>
-
-      <div class="card" style="margin-bottom:24px;">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-          <div class="pub-card-favicon">&#x2615;</div>
+    <!-- ========== SCREEN: ADVERTISER CAMPAIGN DASHBOARD ========== -->
+    <div id="screen-adv-dashboard" class="screen">
+      <div class="topbar">
+        <div class="topbar-logo" onclick="goTo('landing')">Ad<span>Flow</span></div>
+        <div class="topbar-nav">
+          <button onclick="goTo('discovery')">Discovery</button>
+          <button class="active">Campaigns</button>
+          <button onclick="goTo('wallet-adv')">Wallet</button>
+        </div>
+        <div class="topbar-wallet">
+          <div class="wallet-dot"></div>
+          <span>0x4b2e...a81f</span>
+          <span class="wallet-balance" id="adv-wallet-bal">$300.00</span>
+        </div>
+      </div>
+      <div class="container" style="padding-top: 32px; padding-bottom: 48px">
+        <div class="campaign-header">
           <div>
-            <div style="font-weight:600;color:var(--white);">Arabica Coffee Blog</div>
-            <div style="font-size:0.85rem;color:var(--text-dim);">arabicacoffee.blog</div>
+            <div class="campaign-title">Campaign: BeanBox Coffee</div>
+            <div style="color: var(--text-dim); font-size: 0.9rem; margin-top: 4px">
+              arabicacoffee.blog &middot; Started April 3, 2026
+            </div>
           </div>
-          <div class="match-score" style="margin-left:auto;">97% match</div>
-        </div>
-      </div>
-
-      <div class="order-summary">
-        <div class="order-row">
-          <span class="label">Impressions</span>
-          <span class="value">50,000</span>
-        </div>
-        <div class="order-row">
-          <span class="label">Price per 1,000 impressions</span>
-          <span class="value">$4.00</span>
-        </div>
-        <div class="order-row">
-          <span class="label">Ad Format</span>
-          <span class="value">Banner (728x90)</span>
-        </div>
-        <div class="order-row">
-          <span class="label">Payment Method</span>
-          <span class="value">USDC (Streaming)</span>
-        </div>
-        <div class="order-row">
-          <span class="label">Settlement</span>
-          <span class="value">Per 1,000 impressions</span>
-        </div>
-        <div class="order-row order-total">
-          <span class="label" style="font-weight:600;">Total Escrow Amount</span>
-          <span class="value">$200.00 USDC</span>
-        </div>
-      </div>
-
-      <div style="background:var(--accent-dim);border-radius:var(--radius-sm);padding:16px;margin-bottom:24px;font-size:0.85rem;color:var(--accent);line-height:1.5;">
-        Funds will be locked in a smart contract escrow. Payments stream to the publisher as impressions are verified by Chainlink CRE. You can pause or dispute at any time.
-      </div>
-
-      <button class="btn btn-primary btn-block btn-large" onclick="showWalletModal()">Fund Escrow — $200.00 USDC</button>
-      <button class="btn btn-ghost btn-block" style="margin-top:12px;" onclick="goTo('discovery')">Back to Results</button>
-    </div>
-
-    <!-- Escrow Success -->
-    <div id="tx-success" style="display:none;text-align:center;padding:40px 0;">
-      <div class="success-check">&#x2713;</div>
-      <h2 style="color:var(--white);margin-bottom:8px;">Escrow Funded!</h2>
-      <p style="color:var(--text-dim);margin-bottom:8px;">$200.00 USDC locked in smart contract</p>
-      <p style="color:var(--text-dim);font-size:0.85rem;margin-bottom:32px;">Campaign will begin serving immediately. Payments stream per 1,000 impressions.</p>
-      <div style="background:var(--navy);border-radius:var(--radius-sm);padding:16px;margin-bottom:32px;font-family:monospace;font-size:0.8rem;color:var(--text-dim);word-break:break-all;">
-        Tx: 0x8f3a...7b2e4d91c6f0a3e8<br>
-        Contract: 0xAdFl...0wEscr0w<br>
-        Block: 18,442,691
-      </div>
-      <button class="btn btn-primary btn-large" onclick="goTo('adv-dashboard')">View Campaign Dashboard</button>
-    </div>
-  </div>
-</div>
-
-<!-- ========== WALLET MODAL ========== -->
-<div id="wallet-modal" class="modal-overlay" onclick="if(event.target===this)closeWalletModal()">
-  <div class="modal">
-    <div id="wallet-modal-confirm">
-      <h3>Confirm Transaction</h3>
-      <p class="subtitle">You're about to fund an escrow contract.</p>
-      <div class="order-summary" style="margin:0 0 20px;">
-        <div class="order-row">
-          <span class="label">From</span>
-          <span class="value" style="font-family:monospace;font-size:0.85rem;">0x4b2e...a81f</span>
-        </div>
-        <div class="order-row">
-          <span class="label">To</span>
-          <span class="value" style="font-family:monospace;font-size:0.85rem;">AdFlow Escrow Contract</span>
-        </div>
-        <div class="order-row">
-          <span class="label">Amount</span>
-          <span class="value" style="color:var(--accent);">200.00 USDC</span>
-        </div>
-        <div class="order-row">
-          <span class="label">Network Fee</span>
-          <span class="value">~$0.02</span>
-        </div>
-      </div>
-      <div style="display:flex;gap:12px;">
-        <button class="btn btn-ghost" style="flex:1;" onclick="closeWalletModal()">Cancel</button>
-        <button class="btn btn-primary" style="flex:2;" onclick="confirmWalletTx()">Confirm & Sign</button>
-      </div>
-    </div>
-    <div id="wallet-modal-processing" style="display:none;text-align:center;padding:20px 0;">
-      <div class="agent-spinner" style="margin:0 auto 16px;"></div>
-      <p style="color:var(--text-dim);">Processing transaction...</p>
-    </div>
-  </div>
-</div>
-
-<!-- ========== SCREEN: ADVERTISER CAMPAIGN DASHBOARD ========== -->
-<div id="screen-adv-dashboard" class="screen">
-  <div class="topbar">
-    <div class="topbar-logo" onclick="goTo('landing')">Ad<span>Flow</span></div>
-    <div class="topbar-nav">
-      <button onclick="goTo('discovery')">Discovery</button>
-      <button class="active">Campaigns</button>
-      <button onclick="goTo('wallet-adv')">Wallet</button>
-    </div>
-    <div class="topbar-wallet">
-      <div class="wallet-dot"></div>
-      <span>0x4b2e...a81f</span>
-      <span class="wallet-balance" id="adv-wallet-bal">$300.00</span>
-    </div>
-  </div>
-  <div class="container" style="padding-top:32px;padding-bottom:48px;">
-    <div class="campaign-header">
-      <div>
-        <div class="campaign-title">Campaign: BeanBox Coffee</div>
-        <div style="color:var(--text-dim);font-size:0.9rem;margin-top:4px;">arabicacoffee.blog &middot; Started April 3, 2026</div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <span class="badge badge-green">Active</span>
-        <button class="btn btn-secondary btn-sm">Pause Campaign</button>
-      </div>
-    </div>
-
-    <!-- Live Impressions -->
-    <div class="card impression-display">
-      <div style="font-size:0.8rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;">Impressions Delivered</div>
-      <div class="impression-count" id="live-impressions">22,400</div>
-      <div class="impression-total">of 50,000 purchased</div>
-      <div class="progress-bar" style="max-width:400px;margin:20px auto 0;height:12px;">
-        <div class="progress-fill" id="impression-progress" style="width:44.8%;"></div>
-      </div>
-    </div>
-
-    <!-- Stats -->
-    <div class="stat-grid">
-      <div class="card stat-card">
-        <div class="stat-value" style="color:var(--accent);" id="credits-remaining">$110.40</div>
-        <div class="stat-label">Remaining in Escrow</div>
-      </div>
-      <div class="card stat-card">
-        <div class="stat-value" id="credits-spent">$89.60</div>
-        <div class="stat-label">Paid to Publisher</div>
-      </div>
-      <div class="card stat-card">
-        <div class="stat-value">$4.00</div>
-        <div class="stat-label">CPM (Cost per 1K)</div>
-      </div>
-      <div class="card stat-card">
-        <div class="stat-value" id="impressions-remaining">27,600</div>
-        <div class="stat-label">Impressions Remaining</div>
-      </div>
-    </div>
-
-    <!-- Payment Releases -->
-    <div class="card" style="margin-bottom:24px;">
-      <div class="card-header">
-        <span class="card-title">Payment Release History</span>
-        <span class="badge badge-blue">Streaming</span>
-      </div>
-      <div style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">Payments auto-release per 1,000 impressions verified by Chainlink CRE</div>
-      <ul class="timeline" id="payment-timeline">
-        <li class="timeline-item">
-          <div class="timeline-dot">&#x2713;</div>
-          <div class="timeline-content">
-            <div class="timeline-title">1,000 impressions verified — <span class="timeline-amount">$4.00 released</span></div>
-            <div class="timeline-meta">Batch #22 &middot; April 4, 2026 at 2:14 PM</div>
+          <div style="display: flex; gap: 8px">
+            <span class="badge badge-green">Active</span>
+            <button class="btn btn-secondary btn-sm">Pause Campaign</button>
           </div>
-        </li>
-        <li class="timeline-item">
-          <div class="timeline-dot">&#x2713;</div>
-          <div class="timeline-content">
-            <div class="timeline-title">1,000 impressions verified — <span class="timeline-amount">$4.00 released</span></div>
-            <div class="timeline-meta">Batch #21 &middot; April 4, 2026 at 1:47 PM</div>
+        </div>
+
+        <!-- Live Impressions -->
+        <div class="card impression-display">
+          <div
+            style="
+              font-size: 0.8rem;
+              color: var(--text-dim);
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+              margin-bottom: 12px;
+            "
+          >
+            Impressions Delivered
           </div>
-        </li>
-        <li class="timeline-item">
-          <div class="timeline-dot">&#x2713;</div>
-          <div class="timeline-content">
-            <div class="timeline-title">1,000 impressions verified — <span class="timeline-amount">$4.00 released</span></div>
-            <div class="timeline-meta">Batch #20 &middot; April 4, 2026 at 1:12 PM</div>
+          <div class="impression-count" id="live-impressions">22,400</div>
+          <div class="impression-total">of 50,000 purchased</div>
+          <div class="progress-bar" style="max-width: 400px; margin: 20px auto 0; height: 12px">
+            <div class="progress-fill" id="impression-progress" style="width: 44.8%"></div>
           </div>
-        </li>
-        <li class="timeline-item">
-          <div class="timeline-dot">&#x2713;</div>
-          <div class="timeline-content">
-            <div class="timeline-title">1,000 impressions verified — <span class="timeline-amount">$4.00 released</span></div>
-            <div class="timeline-meta">Batch #19 &middot; April 4, 2026 at 12:38 PM</div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stat-grid">
+          <div class="card stat-card">
+            <div class="stat-value" style="color: var(--accent)" id="credits-remaining">$110.40</div>
+            <div class="stat-label">Remaining in Escrow</div>
           </div>
-        </li>
-        <li class="timeline-item">
-          <div class="timeline-dot" style="font-size:0.7rem;">...</div>
-          <div class="timeline-content">
-            <div class="timeline-title" style="color:var(--text-dim);">18 earlier batches</div>
-            <div class="timeline-meta">April 3–4, 2026</div>
+          <div class="card stat-card">
+            <div class="stat-value" id="credits-spent">$89.60</div>
+            <div class="stat-label">Paid to Publisher</div>
           </div>
-        </li>
-      </ul>
-    </div>
+          <div class="card stat-card">
+            <div class="stat-value">$4.00</div>
+            <div class="stat-label">CPM (Cost per 1K)</div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-value" id="impressions-remaining">27,600</div>
+            <div class="stat-label">Impressions Remaining</div>
+          </div>
+        </div>
 
-    <!-- Verification Info -->
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Impression Verification</span>
-        <span class="badge badge-green">Chainlink CRE</span>
-      </div>
-      <div class="order-summary" style="margin:0;">
-        <div class="order-row"><span class="label">Verification Method</span><span class="value">CDN Server-Side Logging</span></div>
-        <div class="order-row"><span class="label">Oracle</span><span class="value">Chainlink CRE (Confidential Compute)</span></div>
-        <div class="order-row"><span class="label">Last Verified</span><span class="value">2 minutes ago</span></div>
-        <div class="order-row"><span class="label">Escrow Contract</span><span class="value" style="font-family:monospace;font-size:0.85rem;">0xAdFl...0wEscr0w</span></div>
-        <div class="order-row"><span class="label">Dispute Status</span><span class="value" style="color:var(--accent);">None</span></div>
-      </div>
-    </div>
-  </div>
-</div>
+        <!-- Payment Releases -->
+        <div class="card" style="margin-bottom: 24px">
+          <div class="card-header">
+            <span class="card-title">Payment Release History</span>
+            <span class="badge badge-blue">Streaming</span>
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 16px">
+            Payments auto-release per 1,000 impressions verified by Chainlink CRE
+          </div>
+          <ul class="timeline" id="payment-timeline">
+            <li class="timeline-item">
+              <div class="timeline-dot">&#x2713;</div>
+              <div class="timeline-content">
+                <div class="timeline-title">
+                  1,000 impressions verified — <span class="timeline-amount">$4.00 released</span>
+                </div>
+                <div class="timeline-meta">Batch #22 &middot; April 4, 2026 at 2:14 PM</div>
+              </div>
+            </li>
+            <li class="timeline-item">
+              <div class="timeline-dot">&#x2713;</div>
+              <div class="timeline-content">
+                <div class="timeline-title">
+                  1,000 impressions verified — <span class="timeline-amount">$4.00 released</span>
+                </div>
+                <div class="timeline-meta">Batch #21 &middot; April 4, 2026 at 1:47 PM</div>
+              </div>
+            </li>
+            <li class="timeline-item">
+              <div class="timeline-dot">&#x2713;</div>
+              <div class="timeline-content">
+                <div class="timeline-title">
+                  1,000 impressions verified — <span class="timeline-amount">$4.00 released</span>
+                </div>
+                <div class="timeline-meta">Batch #20 &middot; April 4, 2026 at 1:12 PM</div>
+              </div>
+            </li>
+            <li class="timeline-item">
+              <div class="timeline-dot">&#x2713;</div>
+              <div class="timeline-content">
+                <div class="timeline-title">
+                  1,000 impressions verified — <span class="timeline-amount">$4.00 released</span>
+                </div>
+                <div class="timeline-meta">Batch #19 &middot; April 4, 2026 at 12:38 PM</div>
+              </div>
+            </li>
+            <li class="timeline-item">
+              <div class="timeline-dot" style="font-size: 0.7rem">...</div>
+              <div class="timeline-content">
+                <div class="timeline-title" style="color: var(--text-dim)">18 earlier batches</div>
+                <div class="timeline-meta">April 3–4, 2026</div>
+              </div>
+            </li>
+          </ul>
+        </div>
 
-<!-- ========== SCREEN: WALLET (ADVERTISER) ========== -->
-<div id="screen-wallet-adv" class="screen">
-  <div class="topbar">
-    <div class="topbar-logo" onclick="goTo('landing')">Ad<span>Flow</span></div>
-    <div class="topbar-nav">
-      <button onclick="goTo('discovery')">Discovery</button>
-      <button onclick="goTo('adv-dashboard')">Campaigns</button>
-      <button class="active">Wallet</button>
-    </div>
-    <div class="topbar-wallet">
-      <div class="wallet-dot"></div>
-      <span>0x4b2e...a81f</span>
-    </div>
-  </div>
-  <div class="container-sm" style="padding-top:32px;padding-bottom:48px;">
-    <div class="wallet-big-balance">
-      <div class="currency">Available Balance</div>
-      <div class="amount">$300.00 <span style="font-size:1.2rem;color:var(--text-dim);font-weight:400;">USDC</span></div>
-      <div class="wallet-address">0x4b2e8f91...da3a81f <span style="cursor:pointer;">&#x1f4cb;</span></div>
-    </div>
-
-    <div class="stat-grid" style="margin-bottom:32px;">
-      <div class="card stat-card">
-        <div class="stat-value" style="color:var(--orange);">$200.00</div>
-        <div class="stat-label">In Escrow</div>
-      </div>
-      <div class="card stat-card">
-        <div class="stat-value">$300.00</div>
-        <div class="stat-label">Available</div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Transaction History</span>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Type</th><th>Amount</th><th>Details</th><th>Date</th></tr></thead>
-          <tbody>
-            <tr>
-              <td><span class="badge badge-orange">Escrow</span></td>
-              <td style="color:var(--red);font-weight:600;">-$200.00</td>
-              <td style="font-size:0.85rem;color:var(--text-dim);">Campaign: BeanBox &rarr; arabicacoffee.blog</td>
-              <td style="font-size:0.85rem;color:var(--text-dim);">Apr 3, 2026</td>
-            </tr>
-            <tr>
-              <td><span class="badge badge-green">Deposit</span></td>
-              <td style="color:var(--accent);font-weight:600;">+$500.00</td>
-              <td style="font-size:0.85rem;color:var(--text-dim);">USDC deposit from external wallet</td>
-              <td style="font-size:0.85rem;color:var(--text-dim);">Apr 3, 2026</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ========== SCREEN: WALLET (PUBLISHER) ========== -->
-<div id="screen-wallet-pub" class="screen">
-  <div class="topbar">
-    <div class="topbar-logo" onclick="goTo('landing')">Ad<span>Flow</span></div>
-    <div class="topbar-nav">
-      <button onclick="goTo('pub-dashboard')">Dashboard</button>
-      <button class="active">Wallet</button>
-    </div>
-    <div class="topbar-wallet">
-      <div class="wallet-dot"></div>
-      <span>0x7a3f...c92d</span>
-    </div>
-  </div>
-  <div class="container-sm" style="padding-top:32px;padding-bottom:48px;">
-    <div class="wallet-big-balance">
-      <div class="currency">Total Earned</div>
-      <div class="streaming-ticker" style="justify-content:center;">
-        <span class="ticker-symbol">$</span>
-        <span id="pub-wallet-whole">142</span>
-        <span class="ticker-decimals">.<span id="pub-wallet-dec">80</span></span>
-        <span class="ticker-symbol" style="margin-left:4px;">USDC</span>
-      </div>
-      <div class="wallet-address" style="margin-top:16px;">0x7a3f2b01...e4c92d <span style="cursor:pointer;">&#x1f4cb;</span></div>
-    </div>
-
-    <div class="stat-grid" style="margin-bottom:32px;">
-      <div class="card stat-card">
-        <div class="stat-value" style="color:var(--accent);">$142.80</div>
-        <div class="stat-label">Received</div>
-      </div>
-      <div class="card stat-card">
-        <div class="stat-value" style="color:var(--blue);">$57.20</div>
-        <div class="stat-label">Pending in Escrow</div>
+        <!-- Verification Info -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Impression Verification</span>
+            <span class="badge badge-green">Chainlink CRE</span>
+          </div>
+          <div class="order-summary" style="margin: 0">
+            <div class="order-row">
+              <span class="label">Verification Method</span><span class="value">CDN Server-Side Logging</span>
+            </div>
+            <div class="order-row">
+              <span class="label">Oracle</span><span class="value">Chainlink CRE (Confidential Compute)</span>
+            </div>
+            <div class="order-row">
+              <span class="label">Last Verified</span><span class="value">2 minutes ago</span>
+            </div>
+            <div class="order-row">
+              <span class="label">Escrow Contract</span
+              ><span class="value" style="font-family: monospace; font-size: 0.85rem">0xAdFl...0wEscr0w</span>
+            </div>
+            <div class="order-row">
+              <span class="label">Dispute Status</span><span class="value" style="color: var(--accent)">None</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Recent Payments</span>
-        <span class="badge badge-green">Streaming</span>
+    <!-- ========== SCREEN: WALLET (ADVERTISER) ========== -->
+    <div id="screen-wallet-adv" class="screen">
+      <div class="topbar">
+        <div class="topbar-logo" onclick="goTo('landing')">Ad<span>Flow</span></div>
+        <div class="topbar-nav">
+          <button onclick="goTo('discovery')">Discovery</button>
+          <button onclick="goTo('adv-dashboard')">Campaigns</button>
+          <button class="active">Wallet</button>
+        </div>
+        <div class="topbar-wallet">
+          <div class="wallet-dot"></div>
+          <span>0x4b2e...a81f</span>
+        </div>
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>From</th><th>Amount</th><th>Batch</th><th>Time</th></tr></thead>
-          <tbody>
-            <tr>
-              <td style="font-size:0.85rem;">BeanBox Coffee Co.</td>
-              <td style="color:var(--accent);font-weight:600;">+$4.00</td>
-              <td style="font-size:0.85rem;color:var(--text-dim);">#22 (1K impr.)</td>
-              <td style="font-size:0.85rem;color:var(--text-dim);">2 min ago</td>
-            </tr>
-            <tr>
-              <td style="font-size:0.85rem;">BrewMaster App</td>
-              <td style="color:var(--accent);font-weight:600;">+$4.00</td>
-              <td style="font-size:0.85rem;color:var(--text-dim);">#13 (1K impr.)</td>
-              <td style="font-size:0.85rem;color:var(--text-dim);">8 min ago</td>
-            </tr>
-            <tr>
-              <td style="font-size:0.85rem;">BeanBox Coffee Co.</td>
-              <td style="color:var(--accent);font-weight:600;">+$4.00</td>
-              <td style="font-size:0.85rem;color:var(--text-dim);">#21 (1K impr.)</td>
-              <td style="font-size:0.85rem;color:var(--text-dim);">29 min ago</td>
-            </tr>
-            <tr>
-              <td style="font-size:0.85rem;">BeanBox Coffee Co.</td>
-              <td style="color:var(--accent);font-weight:600;">+$4.00</td>
-              <td style="font-size:0.85rem;color:var(--text-dim);">#20 (1K impr.)</td>
-              <td style="font-size:0.85rem;color:var(--text-dim);">54 min ago</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="container-sm" style="padding-top: 32px; padding-bottom: 48px">
+        <div class="wallet-big-balance">
+          <div class="currency">Available Balance</div>
+          <div class="amount">
+            $300.00 <span style="font-size: 1.2rem; color: var(--text-dim); font-weight: 400">USDC</span>
+          </div>
+          <div class="wallet-address">0x4b2e8f91...da3a81f <span style="cursor: pointer">&#x1f4cb;</span></div>
+        </div>
+
+        <div class="stat-grid" style="margin-bottom: 32px">
+          <div class="card stat-card">
+            <div class="stat-value" style="color: var(--orange)">$200.00</div>
+            <div class="stat-label">In Escrow</div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-value">$300.00</div>
+            <div class="stat-label">Available</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Transaction History</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Amount</th>
+                  <th>Details</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge badge-orange">Escrow</span></td>
+                  <td style="color: var(--red); font-weight: 600">-$200.00</td>
+                  <td style="font-size: 0.85rem; color: var(--text-dim)">
+                    Campaign: BeanBox &rarr; arabicacoffee.blog
+                  </td>
+                  <td style="font-size: 0.85rem; color: var(--text-dim)">Apr 3, 2026</td>
+                </tr>
+                <tr>
+                  <td><span class="badge badge-green">Deposit</span></td>
+                  <td style="color: var(--accent); font-weight: 600">+$500.00</td>
+                  <td style="font-size: 0.85rem; color: var(--text-dim)">USDC deposit from external wallet</td>
+                  <td style="font-size: 0.85rem; color: var(--text-dim)">Apr 3, 2026</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
 
-<script>
-// ===== NAVIGATION =====
-function goTo(screen) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  const el = document.getElementById('screen-' + screen);
-  if (el) el.classList.add('active');
-}
+    <!-- ========== SCREEN: WALLET (PUBLISHER) ========== -->
+    <div id="screen-wallet-pub" class="screen">
+      <div class="topbar">
+        <div class="topbar-logo" onclick="goTo('landing')">Ad<span>Flow</span></div>
+        <div class="topbar-nav">
+          <button onclick="goTo('pub-dashboard')">Dashboard</button>
+          <button class="active">Wallet</button>
+        </div>
+        <div class="topbar-wallet">
+          <div class="wallet-dot"></div>
+          <span>0x7a3f...c92d</span>
+        </div>
+      </div>
+      <div class="container-sm" style="padding-top: 32px; padding-bottom: 48px">
+        <div class="wallet-big-balance">
+          <div class="currency">Total Earned</div>
+          <div class="streaming-ticker" style="justify-content: center">
+            <span class="ticker-symbol">$</span>
+            <span id="pub-wallet-whole">142</span>
+            <span class="ticker-decimals">.<span id="pub-wallet-dec">80</span></span>
+            <span class="ticker-symbol" style="margin-left: 4px">USDC</span>
+          </div>
+          <div class="wallet-address" style="margin-top: 16px">
+            0x7a3f2b01...e4c92d <span style="cursor: pointer">&#x1f4cb;</span>
+          </div>
+        </div>
 
-function startPublisher() {
-  goTo('pub-onboard');
-  setPubStep(1);
-}
+        <div class="stat-grid" style="margin-bottom: 32px">
+          <div class="card stat-card">
+            <div class="stat-value" style="color: var(--accent)">$142.80</div>
+            <div class="stat-label">Received</div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-value" style="color: var(--blue)">$57.20</div>
+            <div class="stat-label">Pending in Escrow</div>
+          </div>
+        </div>
 
-function startAdvertiser() {
-  goTo('adv-onboard');
-  setAdvStep(1);
-}
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Recent Payments</span>
+            <span class="badge badge-green">Streaming</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>From</th>
+                  <th>Amount</th>
+                  <th>Batch</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="font-size: 0.85rem">BeanBox Coffee Co.</td>
+                  <td style="color: var(--accent); font-weight: 600">+$4.00</td>
+                  <td style="font-size: 0.85rem; color: var(--text-dim)">#22 (1K impr.)</td>
+                  <td style="font-size: 0.85rem; color: var(--text-dim)">2 min ago</td>
+                </tr>
+                <tr>
+                  <td style="font-size: 0.85rem">BrewMaster App</td>
+                  <td style="color: var(--accent); font-weight: 600">+$4.00</td>
+                  <td style="font-size: 0.85rem; color: var(--text-dim)">#13 (1K impr.)</td>
+                  <td style="font-size: 0.85rem; color: var(--text-dim)">8 min ago</td>
+                </tr>
+                <tr>
+                  <td style="font-size: 0.85rem">BeanBox Coffee Co.</td>
+                  <td style="color: var(--accent); font-weight: 600">+$4.00</td>
+                  <td style="font-size: 0.85rem; color: var(--text-dim)">#21 (1K impr.)</td>
+                  <td style="font-size: 0.85rem; color: var(--text-dim)">29 min ago</td>
+                </tr>
+                <tr>
+                  <td style="font-size: 0.85rem">BeanBox Coffee Co.</td>
+                  <td style="color: var(--accent); font-weight: 600">+$4.00</td>
+                  <td style="font-size: 0.85rem; color: var(--text-dim)">#20 (1K impr.)</td>
+                  <td style="font-size: 0.85rem; color: var(--text-dim)">54 min ago</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
 
-// ===== TAGS =====
-function toggleTag(el) {
-  el.classList.toggle('selected');
-}
-
-// ===== PUBLISHER ONBOARDING =====
-function setPubStep(n) {
-  for (let i = 1; i <= 3; i++) {
-    const step = document.getElementById('pub-step-' + i);
-    step.classList.remove('active', 'done');
-    if (i < n) step.classList.add('done');
-    if (i === n) step.classList.add('active');
-  }
-  for (let i = 1; i <= 2; i++) {
-    const line = document.getElementById('pub-line-' + i);
-    line.classList.toggle('active', i < n);
-  }
-}
-
-function pubStep2() {
-  document.getElementById('pub-s1').style.display = 'none';
-  document.getElementById('pub-s2').style.display = 'block';
-  setPubStep(2);
-}
-
-function pubAnalyze() {
-  document.getElementById('pub-analyze-btn').style.display = 'none';
-  document.getElementById('pub-agent-loading').style.display = 'block';
-  const log = document.getElementById('pub-agent-log');
-  const lines = [
-    'Fetching site content from arabicacoffee.blog...',
-    'Analyzing page structure and content...',
-    'Detecting site category: Food & Beverage > Coffee',
-    'Extracting audience demographics...',
-    'Estimating monthly traffic from public signals...',
-    'Generating quality score...',
-    'Analysis complete.'
-  ];
-  log.innerHTML = '';
-  lines.forEach((line, i) => {
-    setTimeout(() => {
-      const el = document.createElement('div');
-      el.className = 'log-line';
-      el.textContent = line;
-      el.style.animationDelay = '0s';
-      log.appendChild(el);
-      log.scrollTop = log.scrollHeight;
-      if (i === lines.length - 1) {
-        setTimeout(() => {
-          document.getElementById('pub-agent-loading').style.display = 'none';
-          document.getElementById('pub-analysis-result').style.display = 'block';
-        }, 600);
+    <script>
+      // ===== NAVIGATION =====
+      function goTo(screen) {
+        document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+        const el = document.getElementById("screen-" + screen);
+        if (el) el.classList.add("active");
       }
-    }, (i + 1) * 700);
-  });
-}
 
-function pubStep3() {
-  document.getElementById('pub-s2').style.display = 'none';
-  document.getElementById('pub-s3').style.display = 'block';
-  setPubStep(3);
-}
-
-function pubGoLive() {
-  goTo('pub-dashboard');
-  startPubTicker();
-}
-
-// ===== PUBLISHER TICKER =====
-let pubTickerInterval;
-function startPubTicker() {
-  let amount = 142.80;
-  clearInterval(pubTickerInterval);
-  pubTickerInterval = setInterval(() => {
-    amount += 0.004 * Math.random();
-    const whole = Math.floor(amount);
-    const dec = Math.floor((amount - whole) * 100).toString().padStart(2, '0');
-    const el1 = document.getElementById('pub-ticker-whole');
-    const el2 = document.getElementById('pub-ticker-dec');
-    const el3 = document.getElementById('pub-wallet-whole');
-    const el4 = document.getElementById('pub-wallet-dec');
-    if (el1) el1.textContent = whole;
-    if (el2) el2.textContent = dec;
-    if (el3) el3.textContent = whole;
-    if (el4) el4.textContent = dec;
-  }, 3000);
-}
-
-// ===== ADVERTISER ONBOARDING =====
-function setAdvStep(n) {
-  for (let i = 1; i <= 2; i++) {
-    const step = document.getElementById('adv-step-' + i);
-    step.classList.remove('active', 'done');
-    if (i < n) step.classList.add('done');
-    if (i === n) step.classList.add('active');
-  }
-  const line = document.getElementById('adv-line-1');
-  line.classList.toggle('active', n > 1);
-}
-
-function advStep2() {
-  document.getElementById('adv-s1').style.display = 'none';
-  document.getElementById('adv-s2').style.display = 'block';
-  setAdvStep(2);
-}
-
-// ===== DISCOVERY =====
-function advDiscover() {
-  goTo('discovery');
-  document.getElementById('discovery-searching').style.display = 'block';
-  document.getElementById('discovery-results').style.display = 'none';
-  const log = document.getElementById('discovery-agent-log');
-  const lines = [
-    'Parsing campaign brief...',
-    'Keywords: "Arabic coffee", "specialty brewing", "coffee culture"',
-    'Audience: English-language, ages 25-45, coffee enthusiasts',
-    'Budget: $200 USDC — Target: 50,000 impressions',
-    'Searching marketplace for matching publishers...',
-    'Found 12 candidates — filtering by relevance...',
-    'Running compatibility checks with publisher agents...',
-    'Publisher agent @ arabicacoffee.blog: APPROVED',
-    'Publisher agent @ specialtyroasters.co: APPROVED',
-    'Publisher agent @ meflavors.com: APPROVED',
-    '3 publishers passed dual-agent verification.'
-  ];
-  log.innerHTML = '';
-  lines.forEach((line, i) => {
-    setTimeout(() => {
-      const el = document.createElement('div');
-      el.className = 'log-line';
-      el.textContent = line;
-      log.appendChild(el);
-      log.scrollTop = log.scrollHeight;
-      if (i === lines.length - 1) {
-        setTimeout(() => {
-          document.getElementById('discovery-searching').style.display = 'none';
-          document.getElementById('discovery-results').style.display = 'block';
-        }, 800);
+      function startPublisher() {
+        goTo("pub-onboard");
+        setPubStep(1);
       }
-    }, (i + 1) * 600);
-  });
-}
 
-// ===== SELECT PUBLISHER =====
-function selectPublisher(idx) {
-  goTo('transaction');
-  document.getElementById('tx-review').style.display = 'block';
-  document.getElementById('tx-success').style.display = 'none';
-}
+      function startAdvertiser() {
+        goTo("adv-onboard");
+        setAdvStep(1);
+      }
 
-// ===== WALLET MODAL =====
-function showWalletModal() {
-  document.getElementById('wallet-modal').classList.add('show');
-  document.getElementById('wallet-modal-confirm').style.display = 'block';
-  document.getElementById('wallet-modal-processing').style.display = 'none';
-}
+      // ===== TAGS =====
+      function toggleTag(el) {
+        el.classList.toggle("selected");
+      }
 
-function closeWalletModal() {
-  document.getElementById('wallet-modal').classList.remove('show');
-}
+      // ===== PUBLISHER ONBOARDING =====
+      function setPubStep(n) {
+        for (let i = 1; i <= 3; i++) {
+          const step = document.getElementById("pub-step-" + i);
+          step.classList.remove("active", "done");
+          if (i < n) step.classList.add("done");
+          if (i === n) step.classList.add("active");
+        }
+        for (let i = 1; i <= 2; i++) {
+          const line = document.getElementById("pub-line-" + i);
+          line.classList.toggle("active", i < n);
+        }
+      }
 
-function confirmWalletTx() {
-  document.getElementById('wallet-modal-confirm').style.display = 'none';
-  document.getElementById('wallet-modal-processing').style.display = 'block';
-  setTimeout(() => {
-    closeWalletModal();
-    document.getElementById('tx-review').style.display = 'none';
-    document.getElementById('tx-success').style.display = 'block';
-  }, 2000);
-}
+      function pubStep2() {
+        document.getElementById("pub-s1").style.display = "none";
+        document.getElementById("pub-s2").style.display = "block";
+        setPubStep(2);
+      }
 
-// ===== LIVE IMPRESSION COUNTER =====
-let impressionCount = 22400;
-let impressionInterval;
-function startImpressionCounter() {
-  clearInterval(impressionInterval);
-  impressionInterval = setInterval(() => {
-    impressionCount += Math.floor(Math.random() * 3) + 1;
-    if (impressionCount > 50000) impressionCount = 50000;
-    const el = document.getElementById('live-impressions');
-    if (el) el.textContent = impressionCount.toLocaleString();
-    const pct = (impressionCount / 50000) * 100;
-    const prog = document.getElementById('impression-progress');
-    if (prog) prog.style.width = pct + '%';
-    const remaining = 50000 - impressionCount;
-    const spent = ((impressionCount / 1000) * 4).toFixed(2);
-    const left = (200 - parseFloat(spent)).toFixed(2);
-    const el2 = document.getElementById('credits-remaining');
-    if (el2) el2.textContent = '$' + left;
-    const el3 = document.getElementById('credits-spent');
-    if (el3) el3.textContent = '$' + spent;
-    const el4 = document.getElementById('impressions-remaining');
-    if (el4) el4.textContent = remaining.toLocaleString();
-  }, 4000);
-}
+      function pubAnalyze() {
+        document.getElementById("pub-analyze-btn").style.display = "none";
+        document.getElementById("pub-agent-loading").style.display = "block";
+        const log = document.getElementById("pub-agent-log");
+        const lines = [
+          "Fetching site content from arabicacoffee.blog...",
+          "Analyzing page structure and content...",
+          "Detecting site category: Food & Beverage > Coffee",
+          "Extracting audience demographics...",
+          "Estimating monthly traffic from public signals...",
+          "Generating quality score...",
+          "Analysis complete.",
+        ];
+        log.innerHTML = "";
+        lines.forEach((line, i) => {
+          setTimeout(
+            () => {
+              const el = document.createElement("div");
+              el.className = "log-line";
+              el.textContent = line;
+              el.style.animationDelay = "0s";
+              log.appendChild(el);
+              log.scrollTop = log.scrollHeight;
+              if (i === lines.length - 1) {
+                setTimeout(() => {
+                  document.getElementById("pub-agent-loading").style.display = "none";
+                  document.getElementById("pub-analysis-result").style.display = "block";
+                }, 600);
+              }
+            },
+            (i + 1) * 700,
+          );
+        });
+      }
 
-// Start counters
-startPubTicker();
-startImpressionCounter();
-</script>
-</body>
+      function pubStep3() {
+        document.getElementById("pub-s2").style.display = "none";
+        document.getElementById("pub-s3").style.display = "block";
+        setPubStep(3);
+      }
+
+      function pubGoLive() {
+        goTo("pub-dashboard");
+        startPubTicker();
+      }
+
+      // ===== PUBLISHER TICKER =====
+      let pubTickerInterval;
+      function startPubTicker() {
+        let amount = 142.8;
+        clearInterval(pubTickerInterval);
+        pubTickerInterval = setInterval(() => {
+          amount += 0.004 * Math.random();
+          const whole = Math.floor(amount);
+          const dec = Math.floor((amount - whole) * 100)
+            .toString()
+            .padStart(2, "0");
+          const el1 = document.getElementById("pub-ticker-whole");
+          const el2 = document.getElementById("pub-ticker-dec");
+          const el3 = document.getElementById("pub-wallet-whole");
+          const el4 = document.getElementById("pub-wallet-dec");
+          if (el1) el1.textContent = whole;
+          if (el2) el2.textContent = dec;
+          if (el3) el3.textContent = whole;
+          if (el4) el4.textContent = dec;
+        }, 3000);
+      }
+
+      // ===== ADVERTISER ONBOARDING =====
+      function setAdvStep(n) {
+        for (let i = 1; i <= 2; i++) {
+          const step = document.getElementById("adv-step-" + i);
+          step.classList.remove("active", "done");
+          if (i < n) step.classList.add("done");
+          if (i === n) step.classList.add("active");
+        }
+        const line = document.getElementById("adv-line-1");
+        line.classList.toggle("active", n > 1);
+      }
+
+      function advStep2() {
+        document.getElementById("adv-s1").style.display = "none";
+        document.getElementById("adv-s2").style.display = "block";
+        setAdvStep(2);
+      }
+
+      // ===== DISCOVERY =====
+      function advDiscover() {
+        goTo("discovery");
+        document.getElementById("discovery-searching").style.display = "block";
+        document.getElementById("discovery-results").style.display = "none";
+        const log = document.getElementById("discovery-agent-log");
+        const lines = [
+          "Parsing campaign brief...",
+          'Keywords: "Arabic coffee", "specialty brewing", "coffee culture"',
+          "Audience: English-language, ages 25-45, coffee enthusiasts",
+          "Budget: $200 USDC — Target: 50,000 impressions",
+          "Searching marketplace for matching publishers...",
+          "Found 12 candidates — filtering by relevance...",
+          "Running compatibility checks with publisher agents...",
+          "Publisher agent @ arabicacoffee.blog: APPROVED",
+          "Publisher agent @ specialtyroasters.co: APPROVED",
+          "Publisher agent @ meflavors.com: APPROVED",
+          "3 publishers passed dual-agent verification.",
+        ];
+        log.innerHTML = "";
+        lines.forEach((line, i) => {
+          setTimeout(
+            () => {
+              const el = document.createElement("div");
+              el.className = "log-line";
+              el.textContent = line;
+              log.appendChild(el);
+              log.scrollTop = log.scrollHeight;
+              if (i === lines.length - 1) {
+                setTimeout(() => {
+                  document.getElementById("discovery-searching").style.display = "none";
+                  document.getElementById("discovery-results").style.display = "block";
+                }, 800);
+              }
+            },
+            (i + 1) * 600,
+          );
+        });
+      }
+
+      // ===== SELECT PUBLISHER =====
+      function selectPublisher(idx) {
+        goTo("transaction");
+        document.getElementById("tx-review").style.display = "block";
+        document.getElementById("tx-success").style.display = "none";
+      }
+
+      // ===== WALLET MODAL =====
+      function showWalletModal() {
+        document.getElementById("wallet-modal").classList.add("show");
+        document.getElementById("wallet-modal-confirm").style.display = "block";
+        document.getElementById("wallet-modal-processing").style.display = "none";
+      }
+
+      function closeWalletModal() {
+        document.getElementById("wallet-modal").classList.remove("show");
+      }
+
+      function confirmWalletTx() {
+        document.getElementById("wallet-modal-confirm").style.display = "none";
+        document.getElementById("wallet-modal-processing").style.display = "block";
+        setTimeout(() => {
+          closeWalletModal();
+          document.getElementById("tx-review").style.display = "none";
+          document.getElementById("tx-success").style.display = "block";
+        }, 2000);
+      }
+
+      // ===== LIVE IMPRESSION COUNTER =====
+      let impressionCount = 22400;
+      let impressionInterval;
+      function startImpressionCounter() {
+        clearInterval(impressionInterval);
+        impressionInterval = setInterval(() => {
+          impressionCount += Math.floor(Math.random() * 3) + 1;
+          if (impressionCount > 50000) impressionCount = 50000;
+          const el = document.getElementById("live-impressions");
+          if (el) el.textContent = impressionCount.toLocaleString();
+          const pct = (impressionCount / 50000) * 100;
+          const prog = document.getElementById("impression-progress");
+          if (prog) prog.style.width = pct + "%";
+          const remaining = 50000 - impressionCount;
+          const spent = ((impressionCount / 1000) * 4).toFixed(2);
+          const left = (200 - parseFloat(spent)).toFixed(2);
+          const el2 = document.getElementById("credits-remaining");
+          if (el2) el2.textContent = "$" + left;
+          const el3 = document.getElementById("credits-spent");
+          if (el3) el3.textContent = "$" + spent;
+          const el4 = document.getElementById("impressions-remaining");
+          if (el4) el4.textContent = remaining.toLocaleString();
+        }, 4000);
+      }
+
+      // Start counters
+      startPubTicker();
+      startImpressionCounter();
+    </script>
+  </body>
 </html>

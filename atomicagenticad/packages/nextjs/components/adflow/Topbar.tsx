@@ -1,28 +1,27 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { RainbowKitCustomConnectButton } from "~~/components/scaffold-eth";
 
 type TopbarVariant = "landing" | "onboarding" | "publisher" | "advertiser";
 
 type TopbarProps = {
   variant: TopbarVariant;
   activeTab?: "dashboard" | "campaigns" | "wallet" | "discovery" | "order";
-  walletAddress?: string;
-  walletBalance?: string;
   onboardingLabel?: string;
 };
 
-export const Topbar = ({ variant, activeTab, walletAddress, walletBalance, onboardingLabel }: TopbarProps) => {
+export const Topbar = ({ variant, activeTab, onboardingLabel }: TopbarProps) => {
   const router = useRouter();
 
   return (
-    <div className="topbar">
-      <button className="topbar-logo" onClick={() => router.push("/")}>
-        Ad<span>Flow</span>
+    <div className="sticky top-0 z-50 flex items-center justify-between h-16 px-6 bg-base-200/90 backdrop-blur-md border-b border-base-300">
+      <button className="btn btn-ghost text-lg font-bold px-2" onClick={() => router.push("/")}>
+        Ad<span className="text-primary">Flow</span>
       </button>
 
       {variant === "landing" && (
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div className="flex gap-2">
           <button className="btn btn-ghost btn-sm" onClick={() => router.push("/publisher/onboard")}>
             For Publishers
           </button>
@@ -32,68 +31,58 @@ export const Topbar = ({ variant, activeTab, walletAddress, walletBalance, onboa
         </div>
       )}
 
-      {variant === "onboarding" && (
-        <span style={{ color: "var(--text-dim)", fontSize: "0.9rem" }}>{onboardingLabel}</span>
-      )}
+      {variant === "onboarding" && <span className="text-sm text-base-content/60">{onboardingLabel}</span>}
 
       {variant === "publisher" && (
-        <>
-          <div className="topbar-nav">
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1">
             <button
-              className={activeTab === "dashboard" ? "active" : ""}
+              className={`btn btn-ghost btn-sm ${activeTab === "dashboard" ? "bg-base-300" : ""}`}
               onClick={() => router.push("/publisher/dashboard")}
             >
               Dashboard
             </button>
             <button
-              className={activeTab === "campaigns" ? "active" : ""}
+              className={`btn btn-ghost btn-sm ${activeTab === "campaigns" ? "bg-base-300" : ""}`}
               onClick={() => router.push("/publisher/dashboard")}
             >
               Campaigns
             </button>
             <button
-              className={activeTab === "wallet" ? "active" : ""}
+              className={`btn btn-ghost btn-sm ${activeTab === "wallet" ? "bg-base-300" : ""}`}
               onClick={() => router.push("/publisher/wallet")}
             >
               Wallet
             </button>
           </div>
-          <div className="topbar-wallet">
-            <div className="wallet-dot" />
-            <span>{walletAddress ?? "0x7a3f...c92d"}</span>
-            <span className="wallet-balance">{walletBalance ?? "$142.80"}</span>
-          </div>
-        </>
+          <RainbowKitCustomConnectButton />
+        </div>
       )}
 
       {variant === "advertiser" && (
-        <>
-          <div className="topbar-nav">
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1">
             <button
-              className={activeTab === "discovery" ? "active" : ""}
+              className={`btn btn-ghost btn-sm ${activeTab === "discovery" ? "bg-base-300" : ""}`}
               onClick={() => router.push("/advertiser/discovery")}
             >
               Discovery
             </button>
             <button
-              className={activeTab === "campaigns" ? "active" : ""}
+              className={`btn btn-ghost btn-sm ${activeTab === "campaigns" ? "bg-base-300" : ""}`}
               onClick={() => router.push("/advertiser/campaign")}
             >
               Campaigns
             </button>
             <button
-              className={activeTab === "wallet" ? "active" : ""}
+              className={`btn btn-ghost btn-sm ${activeTab === "wallet" ? "bg-base-300" : ""}`}
               onClick={() => router.push("/advertiser/wallet")}
             >
               Wallet
             </button>
           </div>
-          <div className="topbar-wallet">
-            <div className="wallet-dot" />
-            <span>{walletAddress ?? "0x4b2e...a81f"}</span>
-            {walletBalance && <span className="wallet-balance">{walletBalance}</span>}
-          </div>
-        </>
+          <RainbowKitCustomConnectButton />
+        </div>
       )}
     </div>
   );

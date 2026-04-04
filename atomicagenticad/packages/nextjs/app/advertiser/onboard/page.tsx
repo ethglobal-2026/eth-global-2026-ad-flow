@@ -21,126 +21,106 @@ const AdvertiserOnboard: NextPage = () => {
   const [fileLabel, setFileLabel] = useState<string | null>(null);
 
   return (
-    <div className="adflow">
+    <div className="min-h-screen bg-base-200">
       <Topbar variant="onboarding" onboardingLabel="Advertiser Onboarding" />
-      <div className="onboard-wrap">
-        <div className="onboard-card">
-          <Stepper steps={STEPS} current={step} />
+      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] px-6 py-12">
+        <div className="card bg-base-100 border border-base-300 shadow-xl w-full max-w-lg">
+          <div className="card-body">
+            <Stepper steps={STEPS} current={step} />
 
-          {step === 1 && (
-            <>
-              <h2>Welcome, Advertiser</h2>
-              <p className="subtitle">Enter your email to start discovering niche publishers for your brand.</p>
-              <div className="form-group">
-                <label className="form-label">Email Address</label>
-                <input
-                  type="email"
-                  placeholder="you@company.com"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                />
-              </div>
-              <button className="btn btn-primary btn-block" onClick={() => setStep(2)}>
-                Continue
-              </button>
-              <p className="form-hint" style={{ textAlign: "center", marginTop: "16px" }}>
-                Powered by Dynamic — no crypto wallet needed
-              </p>
-            </>
-          )}
+            {step === 1 && (
+              <>
+                <h2 className="card-title text-2xl">Welcome, Advertiser</h2>
+                <p className="text-base-content/60 text-sm mb-6">
+                  Enter your email to start discovering niche publishers for your brand.
+                </p>
+                <fieldset className="fieldset">
+                  <legend className="fieldset-legend">Email Address</legend>
+                  <input
+                    type="email"
+                    className="input input-bordered w-full bg-base-200"
+                    placeholder="you@company.com"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                  />
+                </fieldset>
+                <button className="btn btn-primary w-full mt-2" onClick={() => setStep(2)}>
+                  Continue
+                </button>
+                <p className="text-xs text-center text-base-content/40 m-0">
+                  Powered by Dynamic — no crypto wallet needed
+                </p>
+              </>
+            )}
 
-          {step === 2 && (
-            <>
-              <h2>Describe Your Campaign</h2>
-              <p className="subtitle">Tell our agent what you&apos;re looking for — in plain English.</p>
-
-              <div className="form-group">
-                <label className="form-label">What are you promoting?</label>
-                <input
-                  type="text"
-                  placeholder="e.g., BeanBox — premium coffee subscription service"
-                  value={product}
-                  onChange={e => setProduct(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Target Audience (describe naturally)</label>
-                <textarea rows={3} value={audience} onChange={e => setAudience(e.target.value)} />
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Budget (USDC)</label>
-                  <div style={{ position: "relative" }}>
+            {step === 2 && (
+              <>
+                <h2 className="card-title text-2xl">Describe Your Campaign</h2>
+                <p className="text-base-content/60 text-sm mb-6">
+                  Tell our agent what you&apos;re looking for — in plain English.
+                </p>
+                <fieldset className="fieldset">
+                  <legend className="fieldset-legend">What are you promoting?</legend>
+                  <input
+                    type="text"
+                    className="input input-bordered w-full bg-base-200"
+                    value={product}
+                    onChange={e => setProduct(e.target.value)}
+                  />
+                </fieldset>
+                <fieldset className="fieldset">
+                  <legend className="fieldset-legend">Target Audience</legend>
+                  <textarea
+                    className="textarea textarea-bordered w-full bg-base-200"
+                    rows={3}
+                    value={audience}
+                    onChange={e => setAudience(e.target.value)}
+                  />
+                </fieldset>
+                <div className="grid grid-cols-2 gap-4">
+                  <fieldset className="fieldset">
+                    <legend className="fieldset-legend">Budget (USDC)</legend>
+                    <label className="input input-bordered flex items-center gap-2 bg-base-200">
+                      <span className="text-base-content/60 font-semibold">$</span>
+                      <input type="number" value={budget} onChange={e => setBudget(e.target.value)} className="grow" />
+                    </label>
+                  </fieldset>
+                  <fieldset className="fieldset">
+                    <legend className="fieldset-legend">Target Impressions</legend>
                     <input
                       type="number"
-                      value={budget}
-                      onChange={e => setBudget(e.target.value)}
-                      style={{ paddingLeft: "48px" }}
+                      className="input input-bordered w-full bg-base-200"
+                      value={impressions}
+                      onChange={e => setImpressions(e.target.value)}
                     />
-                    <span
-                      style={{
-                        position: "absolute",
-                        left: "16px",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        color: "var(--text-dim)",
-                        fontWeight: 600,
-                      }}
-                    >
-                      $
-                    </span>
+                  </fieldset>
+                </div>
+                <fieldset className="fieldset">
+                  <legend className="fieldset-legend">Ad Creative</legend>
+                  <div
+                    className="border-2 border-dashed border-base-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
+                    onClick={() => setFileLabel("beanbox-banner-728x90.png")}
+                  >
+                    {fileLabel ? (
+                      <>
+                        <div className="text-primary font-semibold">{fileLabel}</div>
+                        <div className="text-sm text-base-content/50 mt-1">Ready to upload</div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-2xl mb-2">📎</div>
+                        <div className="text-sm text-base-content/50">Drop your banner here or click to browse</div>
+                        <div className="text-xs text-base-content/30 mt-1">728x90 or 300x250 PNG/JPG</div>
+                      </>
+                    )}
                   </div>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Target Impressions</label>
-                  <input
-                    type="number"
-                    value={impressions}
-                    onChange={e => setImpressions(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Ad Creative</label>
-                <div
-                  style={{
-                    border: "2px dashed var(--navy-mid)",
-                    borderRadius: "var(--radius-sm)",
-                    padding: "32px",
-                    textAlign: "center",
-                    cursor: "pointer",
-                  }}
-                  onClick={() => setFileLabel("beanbox-banner-728x90.png")}
-                >
-                  {fileLabel ? (
-                    <>
-                      <div style={{ color: "var(--accent)", fontWeight: 600 }}>{fileLabel}</div>
-                      <div style={{ color: "var(--text-dim)", fontSize: "0.85rem", marginTop: "4px" }}>
-                        Ready to upload
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div style={{ fontSize: "1.5rem", marginBottom: "8px" }}>📎</div>
-                      <div style={{ color: "var(--text-dim)", fontSize: "0.9rem" }}>
-                        Drop your banner image here or click to browse
-                      </div>
-                      <div style={{ color: "var(--gray-400)", fontSize: "0.8rem", marginTop: "4px" }}>
-                        728x90 or 300x250 PNG/JPG
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <button className="btn btn-primary btn-block" onClick={() => router.push("/advertiser/discovery")}>
-                Find Publishers
-              </button>
-            </>
-          )}
+                </fieldset>
+                <button className="btn btn-primary w-full mt-2" onClick={() => router.push("/advertiser/discovery")}>
+                  Find Publishers
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -3,8 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { NextPage } from "next";
-import { WalletModal } from "~~/components/adflow/WalletModal";
 import { Topbar } from "~~/components/adflow/Topbar";
+import { WalletModal } from "~~/components/adflow/WalletModal";
+
+const ORDER_ROWS = [
+  { label: "Impressions", value: "50,000" },
+  { label: "Price per 1,000 impressions", value: "$4.00" },
+  { label: "Ad Format", value: "Banner (728x90)" },
+  { label: "Payment Method", value: "USDC (Streaming)" },
+  { label: "Settlement", value: "Per 1,000 impressions" },
+];
 
 const Transaction: NextPage = () => {
   const router = useRouter();
@@ -12,106 +20,72 @@ const Transaction: NextPage = () => {
   const [success, setSuccess] = useState(false);
 
   return (
-    <div className="adflow">
-      <Topbar variant="advertiser" activeTab="order" walletBalance="$500.00" />
-      <div className="container-sm" style={{ paddingTop: "48px", paddingBottom: "48px" }}>
+    <div className="min-h-screen bg-base-200">
+      <Topbar variant="advertiser" activeTab="order" />
+      <div className="max-w-lg mx-auto px-6 py-12">
         {!success ? (
           <>
-            <h1 style={{ fontSize: "1.5rem", color: "var(--white)", marginBottom: "8px" }}>Review Order</h1>
-            <p style={{ color: "var(--text-dim)", marginBottom: "24px" }}>
-              Confirm your campaign details before funding the escrow.
-            </p>
+            <h1 className="text-2xl font-bold text-base-content mb-2">Review Order</h1>
+            <p className="text-base-content/60 mb-6">Confirm your campaign details before funding the escrow.</p>
 
-            <div className="card" style={{ marginBottom: "24px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-                <div className="pub-card-favicon">☕</div>
-                <div>
-                  <div style={{ fontWeight: 600, color: "var(--white)" }}>Arabica Coffee Blog</div>
-                  <div style={{ fontSize: "0.85rem", color: "var(--text-dim)" }}>arabicacoffee.blog</div>
-                </div>
-                <div className="match-score" style={{ marginLeft: "auto" }}>
-                  97% match
+            <div className="card bg-base-100 border border-base-300 mb-4">
+              <div className="card-body py-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-base-300 flex items-center justify-center text-xl">☕</div>
+                  <div>
+                    <div className="font-semibold text-base-content">Arabica Coffee Blog</div>
+                    <div className="text-sm text-base-content/50">arabicacoffee.blog</div>
+                  </div>
+                  <span className="ml-auto bg-primary/10 text-primary text-xs font-bold px-2.5 py-1 rounded-md">
+                    97% match
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div className="order-summary">
-              {[
-                { label: "Impressions", value: "50,000" },
-                { label: "Price per 1,000 impressions", value: "$4.00" },
-                { label: "Ad Format", value: "Banner (728x90)" },
-                { label: "Payment Method", value: "USDC (Streaming)" },
-                { label: "Settlement", value: "Per 1,000 impressions" },
-              ].map(row => (
-                <div key={row.label} className="order-row">
-                  <span className="label">{row.label}</span>
-                  <span className="value">{row.value}</span>
+            <div className="bg-base-100 border border-base-300 rounded-xl p-5 mb-4 divide-y divide-base-300">
+              {ORDER_ROWS.map(row => (
+                <div key={row.label} className="flex justify-between py-2.5 text-sm">
+                  <span className="text-base-content/60">{row.label}</span>
+                  <span className="font-semibold text-base-content">{row.value}</span>
                 </div>
               ))}
-              <div className="order-row order-total">
-                <span className="label" style={{ fontWeight: 600 }}>
-                  Total Escrow Amount
-                </span>
-                <span className="value">$200.00 USDC</span>
+              <div className="flex justify-between py-2.5">
+                <span className="font-semibold text-base-content">Total Escrow Amount</span>
+                <span className="text-xl font-bold text-primary">$200.00 USDC</span>
               </div>
             </div>
 
-            <div
-              style={{
-                background: "var(--accent-dim)",
-                borderRadius: "var(--radius-sm)",
-                padding: "16px",
-                marginBottom: "24px",
-                fontSize: "0.85rem",
-                color: "var(--accent)",
-                lineHeight: 1.5,
-              }}
-            >
+            <div className="bg-primary/10 rounded-lg p-4 mb-6 text-sm text-primary leading-relaxed">
               Funds will be locked in a smart contract escrow. Payments stream to the publisher as impressions are
               verified by Chainlink CRE. You can pause or dispute at any time.
             </div>
 
-            <button
-              className="btn btn-primary btn-block btn-large"
-              onClick={() => setModalOpen(true)}
-            >
+            <button className="btn btn-primary w-full btn-lg" onClick={() => setModalOpen(true)}>
               Fund Escrow — $200.00 USDC
             </button>
-            <button
-              className="btn btn-ghost btn-block"
-              style={{ marginTop: "12px" }}
-              onClick={() => router.push("/advertiser/discovery")}
-            >
+            <button className="btn btn-ghost w-full mt-3" onClick={() => router.push("/advertiser/discovery")}>
               Back to Results
             </button>
           </>
         ) : (
-          <div style={{ textAlign: "center", padding: "40px 0" }}>
-            <div className="success-check">✓</div>
-            <h2 style={{ color: "var(--white)", marginBottom: "8px" }}>Escrow Funded!</h2>
-            <p style={{ color: "var(--text-dim)", marginBottom: "8px" }}>$200.00 USDC locked in smart contract</p>
-            <p style={{ color: "var(--text-dim)", fontSize: "0.85rem", marginBottom: "32px" }}>
+          <div className="text-center py-10">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-3xl mx-auto mb-5">
+              ✓
+            </div>
+            <h2 className="text-2xl font-bold text-base-content mb-2">Escrow Funded!</h2>
+            <p className="text-base-content/60 mb-2">$200.00 USDC locked in smart contract</p>
+            <p className="text-sm text-base-content/40 mb-8">
               Campaign will begin serving immediately. Payments stream per 1,000 impressions.
             </p>
-            <div
-              style={{
-                background: "var(--navy)",
-                borderRadius: "var(--radius-sm)",
-                padding: "16px",
-                marginBottom: "32px",
-                fontFamily: "monospace",
-                fontSize: "0.8rem",
-                color: "var(--text-dim)",
-                wordBreak: "break-all",
-              }}
-            >
+            <div className="bg-base-100 border border-base-300 rounded-lg p-4 mb-8 font-mono text-xs text-base-content/50 text-left break-all">
               Tx: 0x8f3a...7b2e4d91c6f0a3e8
               <br />
               Contract: 0xAdFl...0wEscr0w
               <br />
               Block: 18,442,691
             </div>
-            <button className="btn btn-primary btn-large" onClick={() => router.push("/advertiser/campaign")}>
+            <button className="btn btn-primary btn-lg" onClick={() => router.push("/advertiser/campaign")}>
               View Campaign Dashboard
             </button>
           </div>
