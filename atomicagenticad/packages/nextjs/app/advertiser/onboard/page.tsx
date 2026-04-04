@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import type { NextPage } from "next";
+import { arcTestnet } from "viem/chains";
+import { useAccount, useSwitchChain } from "wagmi";
 import type { CreateAdvertiserRequest, CreateAdvertiserResponse } from "~~/app/api/advertisers/route";
 import { Stepper } from "~~/components/adflow/Stepper";
 import { Topbar } from "~~/components/adflow/Topbar";
@@ -16,6 +18,8 @@ const STEPS = [{ label: "Account" }, { label: "Profile" }];
 const AdvertiserOnboard: NextPage = () => {
   const router = useRouter();
   const { user, primaryWallet, setShowAuthFlow } = useDynamicContext();
+  const { chain } = useAccount();
+  const { switchChainAsync, isPending: switchingChain } = useSwitchChain();
   const [step, setStep] = useState(1);
   const [checking, setChecking] = useState(false);
   const [email, setEmail] = useState("");
@@ -73,6 +77,17 @@ const AdvertiserOnboard: NextPage = () => {
       enabled: walletLooksValid,
     },
   });
+
+  const ensureArcNetwork = async () => {
+    if (chain?.id === arcTestnet.id) return true;
+    try {
+      await switchChainAsync({ chainId: arcTestnet.id });
+      return true;
+    } catch {
+      notification.error(`Please switch your wallet network to ${arcTestnet.name}.`);
+      return false;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-base-200">
@@ -184,7 +199,9 @@ const AdvertiserOnboard: NextPage = () => {
                   <button
                     type="button"
                     className="btn btn-primary flex-[2]"
-                    disabled={submitting || registeringOnchain || !walletLooksValid || !displayName.trim()}
+                    disabled={
+                      submitting || switchingChain || registeringOnchain || !walletLooksValid || !displayName.trim()
+                    }
                     title={
                       submitting
                         ? "Saving…"
@@ -197,13 +214,23 @@ const AdvertiserOnboard: NextPage = () => {
                     onClick={async () => {
                       setSubmitting(true);
                       try {
+                        const onArc = await ensureArcNetwork();
+                        if (!onArc) {
+                          setSubmitting(false);
+                          return;
+                        }
+
                         let onchainAdvertiserId = (await refetchAdvertiserIdByAccount()).data ?? 0n;
                         if (onchainAdvertiserId === 0n) {
                           const metadataUri = `adflow://advertiser/${encodeURIComponent(email.trim().toLowerCase())}`;
-                          await writeAdvertiserRegistryAsync({
+                          const txHash = await writeAdvertiserRegistryAsync({
                             functionName: "createAdvertiserProfile",
                             args: [displayName.trim(), metadataUri],
                           });
+                          if (!txHash) {
+                            setSubmitting(false);
+                            return;
+                          }
                           onchainAdvertiserId = (await refetchAdvertiserIdByAccount()).data ?? 0n;
                         }
                         if (onchainAdvertiserId === 0n) {

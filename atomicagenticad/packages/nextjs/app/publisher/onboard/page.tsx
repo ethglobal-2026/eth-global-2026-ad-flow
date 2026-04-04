@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import type { NextPage } from "next";
 import { parseUnits } from "viem";
+import { arcTestnet } from "viem/chains";
+import { useAccount, useSwitchChain } from "wagmi";
 import type { SiteAnalysis } from "~~/app/api/analyze-site/route";
 import type { CreatePublisherRequest, CreatePublisherResponse } from "~~/app/api/publishers/route";
 import { AgentLoader } from "~~/components/adflow/AgentLoader";
@@ -51,6 +53,8 @@ function toPricePerImpressionWei(floorPricePer1kUsd: string, nativeUsdPrice: str
 const PublisherOnboard: NextPage = () => {
   const router = useRouter();
   const { user, primaryWallet, setShowAuthFlow } = useDynamicContext();
+  const { chain } = useAccount();
+  const { switchChainAsync, isPending: switchingChain } = useSwitchChain();
   const [step, setStep] = useState(1);
   const [checking, setChecking] = useState(false);
   const [email, setEmail] = useState("");
@@ -111,6 +115,17 @@ const PublisherOnboard: NextPage = () => {
       enabled: walletLooksValid,
     },
   });
+
+  const ensureArcNetwork = async () => {
+    if (chain?.id === arcTestnet.id) return true;
+    try {
+      await switchChainAsync({ chainId: arcTestnet.id });
+      return true;
+    } catch {
+      notification.error(`Please switch your wallet network to ${arcTestnet.name}.`);
+      return false;
+    }
+  };
 
   // Holds the API result while the animation is still running
   const pendingAnalysis = useRef<SiteAnalysis | null>(null);
@@ -384,7 +399,7 @@ const PublisherOnboard: NextPage = () => {
                 )}
                 <button
                   className="btn btn-primary w-full mt-2"
-                  disabled={publishing || registeringOnchain || !analysis || !walletLooksValid}
+                  disabled={publishing || switchingChain || registeringOnchain || !analysis || !walletLooksValid}
                   onClick={async () => {
                     if (!analysis) {
                       notification.error("Complete site analysis before publishing.");
@@ -396,6 +411,12 @@ const PublisherOnboard: NextPage = () => {
                     }
                     setPublishing(true);
                     try {
+                      const onArc = await ensureArcNetwork();
+                      if (!onArc) {
+                        setPublishing(false);
+                        return;
+                      }
+
                       const pricePerImpressionWei = toPricePerImpressionWei(price.trim(), nativeUsdPrice);
                       if (pricePerImpressionWei <= 0n) {
                         notification.error("Invalid floor price. Enter a value greater than zero.");
@@ -407,10 +428,14 @@ const PublisherOnboard: NextPage = () => {
                       if (onchainPublisherId === 0n) {
                         const ensName = toPublisherEnsName(url.trim());
                         const metadataUri = `adflow://publisher/${encodeURIComponent(url.trim())}`;
-                        await writePublisherRegistryAsync({
+                        const txHash = await writePublisherRegistryAsync({
                           functionName: "createPublisherListing",
                           args: [ensName, pricePerImpressionWei, metadataUri],
                         });
+                        if (!txHash) {
+                          setPublishing(false);
+                          return;
+                        }
                         onchainPublisherId = (await refetchPublisherIdByAccount()).data ?? 0n;
                       }
                       if (onchainPublisherId === 0n) {
