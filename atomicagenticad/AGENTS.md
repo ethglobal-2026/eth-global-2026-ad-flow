@@ -337,6 +337,7 @@ async function handle(request: NextRequest) {
 | Route | Method | Purpose |
 |---|---|---|
 | `/api/analyze-site` | `POST` | Analyzes a publisher's website using Claude. Body: `{ url: string }`. Returns `SiteAnalysis`. |
+| `/api/publishers` | `GET`, `POST` | Lists publishers or creates a publisher record in Postgres. |
 
 ---
 
