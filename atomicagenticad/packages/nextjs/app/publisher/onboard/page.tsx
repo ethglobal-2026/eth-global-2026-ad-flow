@@ -1,19 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { NextPage } from "next";
+import type { SiteAnalysis } from "~~/app/api/analyze-site/route";
 import { AgentLoader } from "~~/components/adflow/AgentLoader";
 import { Stepper } from "~~/components/adflow/Stepper";
 import { Topbar } from "~~/components/adflow/Topbar";
 import { notification } from "~~/utils/scaffold-eth";
 
 const AGENT_LINES = [
-  "Fetching site content from arabicacoffee.blog...",
-  "Analyzing page structure and content...",
-  "Detecting site category: Food & Beverage > Coffee",
+  "Fetching site content...",
+  "Analyzing page structure and topics...",
+  "Detecting site category...",
   "Extracting audience demographics...",
-  "Estimating monthly traffic from public signals...",
+  "Estimating monthly traffic...",
   "Generating quality score...",
   "Analysis complete.",
 ];
@@ -26,14 +27,61 @@ const PublisherOnboard: NextPage = () => {
   const [email, setEmail] = useState("");
   const [url, setUrl] = useState("https://arabicacoffee.blog");
   const [analyzing, setAnalyzing] = useState(false);
-  const [analyzed, setAnalyzed] = useState(false);
+  const [analysis, setAnalysis] = useState<SiteAnalysis | null>(null);
   const [price, setPrice] = useState("4.00");
   const [format, setFormat] = useState("Both");
   const [blockedCategories, setBlockedCategories] = useState(["Gambling", "Crypto Trading"]);
   const [preferredTypes, setPreferredTypes] = useState(["SaaS / Software", "E-commerce", "Food & Beverage"]);
 
+  // Holds the API result while the animation is still running
+  const pendingAnalysis = useRef<SiteAnalysis | null>(null);
+
   const toggleTag = (tag: string, list: string[], setList: (v: string[]) => void) =>
     setList(list.includes(tag) ? list.filter(t => t !== tag) : [...list, tag]);
+
+  const handleAnalyze = () => {
+    setAnalyzing(true);
+    setAnalysis(null);
+    pendingAnalysis.current = null;
+
+    // Fire API call in parallel with the animation
+    fetch("/api/analyze-site", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Analysis failed");
+        return res.json() as Promise<SiteAnalysis>;
+      })
+      .then(data => {
+        pendingAnalysis.current = data;
+      })
+      .catch(() => {
+        notification.error("Site analysis failed. Check your ANTHROPIC_API_KEY.");
+        setAnalyzing(false);
+      });
+  };
+
+  // Called when the AgentLoader animation finishes
+  const handleAnimationComplete = () => {
+    if (pendingAnalysis.current) {
+      // API already returned — show results immediately
+      setAnalysis(pendingAnalysis.current);
+      setAnalyzing(false);
+      notification.info("Site analysis complete.");
+    } else {
+      // API still running — poll every 500ms until it's ready
+      const poll = setInterval(() => {
+        if (pendingAnalysis.current) {
+          clearInterval(poll);
+          setAnalysis(pendingAnalysis.current);
+          setAnalyzing(false);
+          notification.info("Site analysis complete.");
+        }
+      }, 500);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-base-200">
@@ -72,7 +120,7 @@ const PublisherOnboard: NextPage = () => {
               <>
                 <h2 className="card-title text-2xl">Tell Us About Your Site</h2>
                 <p className="text-base-content/60 text-sm mb-6">
-                  Our agent will analyze your site to create the perfect listing.
+                  Our AI agent will analyze your site to create the perfect listing.
                 </p>
                 <fieldset className="fieldset">
                   <legend className="fieldset-legend">Website URL</legend>
@@ -82,51 +130,59 @@ const PublisherOnboard: NextPage = () => {
                     placeholder="https://yourblog.com"
                     value={url}
                     onChange={e => setUrl(e.target.value)}
+                    disabled={analyzing}
                   />
                 </fieldset>
 
-                {!analyzing && !analyzed && (
-                  <button className="btn btn-primary w-full" onClick={() => setAnalyzing(true)}>
+                {!analyzing && !analysis && (
+                  <button className="btn btn-primary w-full" onClick={handleAnalyze}>
                     Analyze My Site
                   </button>
                 )}
 
-                {analyzing && !analyzed && (
+                {analyzing && (
                   <AgentLoader
                     lines={AGENT_LINES}
                     status="Agent is analyzing your site..."
-                    onComplete={() => {
-                      setAnalyzing(false);
-                      setAnalyzed(true);
-                      notification.info("Site analysis complete.");
-                    }}
+                    onComplete={handleAnimationComplete}
                   />
                 )}
 
-                {analyzed && (
+                {analysis && (
                   <>
                     <div className="bg-base-200 rounded-lg border border-base-300 divide-y divide-base-300">
                       {[
-                        { label: "Category", value: "Food & Beverage — Specialty Coffee" },
-                        { label: "Content Focus", value: "Arabic coffee culture, brewing guides, bean reviews" },
-                        { label: "Language", value: "English" },
-                        { label: "Est. Monthly Traffic", value: "~12,000 visitors" },
-                        { label: "Audience", value: "Coffee enthusiasts, ages 25-45" },
-                        { label: "Quality Score", value: "8.4 / 10", accent: true },
+                        { label: "Category", value: analysis.category },
+                        { label: "Content Focus", value: analysis.contentFocus },
+                        { label: "Language", value: analysis.language },
+                        { label: "Est. Monthly Traffic", value: analysis.estimatedMonthlyTraffic },
+                        { label: "Audience", value: analysis.audience },
+                        { label: "Quality Score", value: `${analysis.qualityScore} / 10`, accent: true },
                       ].map(row => (
                         <div key={row.label} className="flex justify-between px-4 py-2.5 text-sm">
                           <span className="text-base-content/60">{row.label}</span>
                           <span
-                            className={`font-medium ${(row as { accent?: boolean }).accent ? "text-primary" : "text-base-content"}`}
+                            className={`font-medium text-right max-w-[60%] ${row.accent ? "text-primary" : "text-base-content"}`}
                           >
                             {row.value}
                           </span>
                         </div>
                       ))}
                     </div>
-                    <button className="btn btn-primary w-full mt-2" onClick={() => setStep(3)}>
-                      Looks Good — Continue
-                    </button>
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => {
+                          setAnalysis(null);
+                          pendingAnalysis.current = null;
+                        }}
+                      >
+                        Re-analyze
+                      </button>
+                      <button className="btn btn-primary flex-1" onClick={() => setStep(3)}>
+                        Looks Good — Continue
+                      </button>
+                    </div>
                   </>
                 )}
               </>
