@@ -1,8 +1,10 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.24;
 
 import "./DeployHelpers.s.sol";
-import { DeployYourContract } from "./DeployYourContract.s.sol";
+import {AdvertiserRegistry} from "../contracts/AdvertiserRegistry.sol";
+import {DealFactory} from "../contracts/DealFactory.sol";
+import {PublisherRegistry} from "../contracts/PublisherRegistry.sol";
 
 /**
  * @notice Main deployment script for all contracts
@@ -11,15 +13,14 @@ import { DeployYourContract } from "./DeployYourContract.s.sol";
  * Example: yarn deploy # runs this script(without`--file` flag)
  */
 contract DeployScript is ScaffoldETHDeploy {
-    function run() external {
-        // Deploys all your contracts sequentially
-        // Add new deployments here when needed
+    function run() external ScaffoldEthDeployerRunner {
+        AdvertiserRegistry advertiserRegistry = new AdvertiserRegistry(deployer);
+        PublisherRegistry publisherRegistry = new PublisherRegistry(deployer);
+        DealFactory dealFactory = new DealFactory(address(advertiserRegistry), address(publisherRegistry));
+        publisherRegistry.grantRole(publisherRegistry.DEAL_MANAGER_ROLE(), address(dealFactory));
 
-        DeployYourContract deployYourContract = new DeployYourContract();
-        deployYourContract.run();
-
-        // Deploy another contract
-        // DeployMyContract myContract = new DeployMyContract();
-        // myContract.run();
+        deployments.push(Deployment({name: "AdvertiserRegistry", addr: address(advertiserRegistry)}));
+        deployments.push(Deployment({name: "PublisherRegistry", addr: address(publisherRegistry)}));
+        deployments.push(Deployment({name: "DealFactory", addr: address(dealFactory)}));
     }
 }

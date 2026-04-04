@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
@@ -7,12 +8,16 @@
 @theme {
   --shadow-center: 0 0 12px -2px rgb(0 0 0 / 0.05);
   --animate-pulse-fast: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Courier New", monospace;
 }
 
 @plugin "daisyui" {
   themes:
     light,
-    dark --prefersdark;
+    dark --prefersdark,
+    adflow,
+    tripleaaa;
 }
 
 @plugin "daisyui/theme" {
@@ -75,6 +80,75 @@
   If we ever want to remove these styles, we need to add an explicit border
   color utility to any element that depends on these defaults.
 */
+@plugin "daisyui/theme" {
+  name: "adflow";
+
+  --color-base-100: #1a2540;
+  --color-base-200: #0f1729;
+  --color-base-300: #243056;
+  --color-base-content: #e2e8f0;
+
+  --color-primary: #00d4aa;
+  --color-primary-content: #0f1729;
+
+  --color-secondary: #243056;
+  --color-secondary-content: #e2e8f0;
+
+  --color-neutral: #1a2540;
+  --color-neutral-content: #e2e8f0;
+
+  --color-info: #4a9eff;
+  --color-info-content: #ffffff;
+
+  --color-success: #00d4aa;
+  --color-success-content: #0f1729;
+
+  --color-warning: #ff8c42;
+  --color-warning-content: #0f1729;
+
+  --color-error: #ff4757;
+  --color-error-content: #ffffff;
+
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+}
+
+@plugin "daisyui/theme" {
+  name: "tripleaaa";
+
+  --color-base-100: #ffffff;
+  --color-base-200: #F6FAFF;
+  --color-base-300: #DFE4EA;
+  --color-base-content: #1C283B;
+
+  --color-primary: #246BF6;
+  --color-primary-content: #ffffff;
+
+  --color-secondary: #E9EFF5;
+  --color-secondary-content: #1C283B;
+
+  --color-accent: #246BF6;
+  --color-accent-content: #ffffff;
+
+  --color-neutral: #1C283B;
+  --color-neutral-content: #ffffff;
+
+  --color-info: #246BF6;
+  --color-info-content: #ffffff;
+
+  --color-success: #10b981;
+  --color-success-content: #ffffff;
+
+  --color-warning: #f59e0b;
+  --color-warning-content: #ffffff;
+
+  --color-error: #ef4444;
+  --color-error-content: #ffffff;
+
+  --radius-field: 0.625rem;
+  --radius-box: 0.75rem;
+}
+
 @layer base {
   *,
   ::after,
@@ -90,6 +164,7 @@
 
   body {
     min-height: 100vh;
+    font-family: var(--font-sans);
   }
 
   h1,
@@ -98,6 +173,8 @@
   h4 {
     margin-bottom: 0.5rem;
     line-height: 1;
+    font-family: var(--font-sans);
+    font-weight: 800;
   }
 }
 

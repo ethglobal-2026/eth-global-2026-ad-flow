@@ -1,0 +1,13 @@
+ALTER TABLE "publishers" ADD COLUMN "email" varchar(255);
+UPDATE "publishers" SET "email" = ('legacy+' || "id"::text || '@adflow.local') WHERE "email" IS NULL;
+ALTER TABLE "publishers" ALTER COLUMN "email" SET NOT NULL;
+ALTER TABLE "publishers" ADD CONSTRAINT "publishers_email_unique" UNIQUE ("email");
+ALTER TABLE "publishers" ALTER COLUMN "wallet_address" DROP NOT NULL;
+ALTER TABLE "publishers" ADD COLUMN "content_focus" text;
+ALTER TABLE "publishers" ADD COLUMN "language" varchar(64);
+ALTER TABLE "publishers" ADD COLUMN "estimated_monthly_traffic" varchar(120);
+ALTER TABLE "publishers" ADD COLUMN "audience" text;
+ALTER TABLE "publishers" ADD COLUMN "floor_price_per_1k_usd" varchar(32) DEFAULT '0' NOT NULL;
+ALTER TABLE "publishers" ADD COLUMN "ad_format" varchar(64) DEFAULT 'Both' NOT NULL;
+ALTER TABLE "publishers" ADD COLUMN "blocked_categories" jsonb DEFAULT '[]'::jsonb NOT NULL;
+ALTER TABLE "publishers" ADD COLUMN "preferred_advertiser_types" jsonb DEFAULT '[]'::jsonb NOT NULL;

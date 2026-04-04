@@ -1,5 +1,5 @@
 {
-  "name": "Scaffold-ETH 2 DApp",
-  "description": "A DApp built with Scaffold-ETH",
-  "iconPath": "logo.svg"
+  "name": "AdFlow",
+  "description": "Agent-powered ad marketplace with on-chain escrow and verified delivery.",
+  "iconPath": "favicon.png"
 }

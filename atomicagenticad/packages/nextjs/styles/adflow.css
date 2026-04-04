@@ -1,0 +1,1065 @@
+/* ===== ADFLOW — scoped under .adflow wrapper ===== */
+.adflow {
+  --navy: #0f1729;
+  --navy-light: #1a2540;
+  --navy-mid: #243056;
+  --accent: #00d4aa;
+  --accent-hover: #00b894;
+  --accent-dim: rgba(0, 212, 170, 0.12);
+  --blue: #4a9eff;
+  --orange: #ff8c42;
+  --red: #ff4757;
+  --white: #ffffff;
+  --gray-400: #9aa3b2;
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  --transition: 0.25s ease;
+
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--navy);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.adflow *,
+.adflow *::before,
+.adflow *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.adflow a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.adflow button {
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  font-size: 1rem;
+  transition: var(--transition);
+}
+
+.adflow input,
+.adflow textarea,
+.adflow select {
+  font-family: inherit;
+  font-size: 1rem;
+  background: var(--navy);
+  border: 1.5px solid var(--navy-mid);
+  color: var(--text);
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  width: 100%;
+  transition: var(--transition);
+  outline: none;
+}
+
+.adflow input:focus,
+.adflow textarea:focus,
+.adflow select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.adflow input::placeholder,
+.adflow textarea::placeholder {
+  color: var(--gray-400);
+}
+
+.adflow select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239aa3b2' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-color: var(--navy);
+  padding-right: 36px;
+}
+
+/* ===== BUTTONS ===== */
+.adflow .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 28px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+}
+
+.adflow .btn-primary {
+  background: var(--accent);
+  color: var(--navy);
+}
+
+.adflow .btn-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 212, 170, 0.3);
+}
+
+.adflow .btn-secondary {
+  background: transparent;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+}
+
+.adflow .btn-secondary:hover {
+  background: var(--accent-dim);
+}
+
+.adflow .btn-ghost {
+  background: transparent;
+  color: var(--text-dim);
+}
+
+.adflow .btn-ghost:hover {
+  color: var(--text);
+}
+
+.adflow .btn-large {
+  padding: 18px 40px;
+  font-size: 1.125rem;
+  border-radius: var(--radius);
+}
+
+.adflow .btn-sm {
+  padding: 8px 16px;
+  font-size: 0.875rem;
+}
+
+.adflow .btn-block {
+  width: 100%;
+}
+
+.adflow .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* ===== LAYOUT ===== */
+.adflow .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.adflow .container-sm {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ===== TOPBAR ===== */
+.adflow .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(15, 23, 41, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--navy-mid);
+  padding: 0 24px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.adflow .topbar-logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.adflow .topbar-logo span {
+  color: var(--accent);
+}
+
+.adflow .topbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.adflow .topbar-nav button {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  background: transparent;
+}
+
+.adflow .topbar-nav button:hover,
+.adflow .topbar-nav button.active {
+  color: var(--white);
+  background: var(--navy-mid);
+}
+
+.adflow .topbar-wallet {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--navy-light);
+  padding: 6px 14px 6px 10px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.adflow .wallet-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.adflow .wallet-balance {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ===== CARDS ===== */
+.adflow .card {
+  background: var(--navy-light);
+  border: 1px solid var(--navy-mid);
+  border-radius: var(--radius);
+  padding: 24px;
+  transition: var(--transition);
+}
+
+.adflow .card:hover {
+  border-color: rgba(0, 212, 170, 0.3);
+}
+
+.adflow .card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.adflow .card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--white);
+}
+
+/* ===== BADGES ===== */
+.adflow .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.adflow .badge-green {
+  background: rgba(0, 212, 170, 0.15);
+  color: var(--accent);
+}
+
+.adflow .badge-blue {
+  background: rgba(74, 158, 255, 0.15);
+  color: var(--blue);
+}
+
+.adflow .badge-orange {
+  background: rgba(255, 140, 66, 0.15);
+  color: var(--orange);
+}
+
+.adflow .badge-red {
+  background: rgba(255, 71, 87, 0.15);
+  color: var(--red);
+}
+
+/* ===== STAT GRID ===== */
+.adflow .stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.adflow .stat-card {
+  text-align: center;
+}
+
+.adflow .stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 4px;
+}
+
+.adflow .stat-label {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ===== PROGRESS BAR ===== */
+.adflow .progress-bar {
+  height: 8px;
+  background: var(--navy-mid);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.adflow .progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--accent), var(--blue));
+  transition: width 1s ease;
+}
+
+/* ===== TABLE ===== */
+.adflow .table-wrap {
+  overflow-x: auto;
+}
+
+.adflow table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.adflow th {
+  text-align: left;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--navy-mid);
+}
+
+.adflow td {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(36, 48, 86, 0.5);
+  font-size: 0.9rem;
+}
+
+.adflow tr:hover td {
+  background: rgba(0, 212, 170, 0.03);
+}
+
+/* ===== FORM GROUPS ===== */
+.adflow .form-group {
+  margin-bottom: 20px;
+}
+
+.adflow .form-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.adflow .form-hint {
+  font-size: 0.8rem;
+  color: var(--gray-400);
+  margin-top: 6px;
+}
+
+.adflow .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* ===== CHECKBOX / TAG ===== */
+.adflow .checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.adflow .tag-check {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1.5px solid var(--navy-mid);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.adflow .tag-check:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.adflow .tag-check.selected {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+/* ===== STEPPER ===== */
+.adflow .stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 40px;
+}
+
+.adflow .step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.adflow .step-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  border: 2px solid var(--navy-mid);
+  color: var(--text-dim);
+  background: transparent;
+  transition: var(--transition);
+}
+
+.adflow .step.active .step-num {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--navy);
+}
+
+.adflow .step.done .step-num {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.adflow .step-line {
+  width: 48px;
+  height: 2px;
+  background: var(--navy-mid);
+  margin: 0 8px;
+}
+
+.adflow .step-line.active {
+  background: var(--accent);
+}
+
+/* ===== LANDING ===== */
+.adflow .landing-hero {
+  min-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px 24px;
+}
+
+.adflow .landing-hero h1 {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--white);
+  margin-bottom: 20px;
+  max-width: 700px;
+}
+
+.adflow .landing-hero h1 em {
+  font-style: normal;
+  color: var(--accent);
+}
+
+.adflow .landing-hero p {
+  font-size: 1.2rem;
+  color: var(--text-dim);
+  max-width: 520px;
+  line-height: 1.6;
+  margin-bottom: 40px;
+}
+
+.adflow .hero-buttons {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.adflow .hero-features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  margin-top: 80px;
+  max-width: 800px;
+}
+
+.adflow .hero-feature {
+  text-align: center;
+}
+
+.adflow .hero-feature-icon {
+  font-size: 2rem;
+  margin-bottom: 12px;
+}
+
+.adflow .hero-feature h3 {
+  font-size: 1rem;
+  color: var(--white);
+  margin-bottom: 6px;
+}
+
+.adflow .hero-feature p {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ===== ONBOARDING ===== */
+.adflow .onboard-wrap {
+  min-height: calc(100vh - 64px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+}
+
+.adflow .onboard-card {
+  background: var(--navy-light);
+  border: 1px solid var(--navy-mid);
+  border-radius: 16px;
+  padding: 40px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: var(--shadow);
+}
+
+.adflow .onboard-card h2 {
+  font-size: 1.5rem;
+  color: var(--white);
+  margin-bottom: 8px;
+}
+
+.adflow .onboard-card .subtitle {
+  color: var(--text-dim);
+  margin-bottom: 32px;
+  font-size: 0.95rem;
+}
+
+/* ===== AGENT LOADING ===== */
+.adflow .agent-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  gap: 20px;
+}
+
+.adflow .agent-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--navy-mid);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: adflowSpin 0.8s linear infinite;
+}
+
+.adflow .agent-status {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.adflow .agent-log {
+  width: 100%;
+  background: var(--navy);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.8rem;
+  color: var(--accent);
+  line-height: 1.8;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.adflow .log-line::before {
+  content: "> ";
+  color: var(--text-dim);
+}
+
+/* ===== DISCOVERY CARDS ===== */
+.adflow .discovery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+}
+
+.adflow .pub-card {
+  background: var(--navy-light);
+  border: 1px solid var(--navy-mid);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.adflow .pub-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 212, 170, 0.1);
+}
+
+.adflow .pub-card-header {
+  padding: 20px 20px 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.adflow .pub-card-site {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.adflow .pub-card-favicon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--navy-mid);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+.adflow .pub-card-name {
+  font-weight: 600;
+  color: var(--white);
+  font-size: 1rem;
+}
+
+.adflow .pub-card-url {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.adflow .match-score {
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.adflow .pub-card-body {
+  padding: 16px 20px;
+}
+
+.adflow .pub-card-desc {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.adflow .pub-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.adflow .pub-card-tags span {
+  padding: 3px 10px;
+  background: var(--navy);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.adflow .pub-card-stats {
+  display: flex;
+  gap: 24px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--navy-mid);
+  font-size: 0.8rem;
+}
+
+.adflow .pub-card-stats div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.adflow .pub-card-stats .label {
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.adflow .pub-card-stats .value {
+  color: var(--white);
+  font-weight: 600;
+}
+
+.adflow .pub-card-reason {
+  padding: 12px 20px;
+  background: var(--accent-dim);
+  font-size: 0.8rem;
+  color: var(--accent);
+  line-height: 1.4;
+  border-top: 1px solid rgba(0, 212, 170, 0.1);
+}
+
+.adflow .pub-card-reason strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ===== ORDER REVIEW ===== */
+.adflow .order-summary {
+  background: var(--navy);
+  border-radius: var(--radius-sm);
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.adflow .order-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--navy-mid);
+  font-size: 0.9rem;
+}
+
+.adflow .order-row:last-child {
+  border-bottom: none;
+}
+
+.adflow .order-row .label {
+  color: var(--text-dim);
+}
+
+.adflow .order-row .value {
+  color: var(--white);
+  font-weight: 600;
+}
+
+.adflow .order-total {
+  font-size: 1.1rem;
+}
+
+.adflow .order-total .value {
+  color: var(--accent);
+  font-size: 1.25rem;
+}
+
+/* ===== WALLET MODAL ===== */
+.adflow .modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.adflow .modal {
+  background: var(--navy-light);
+  border: 1px solid var(--navy-mid);
+  border-radius: 16px;
+  padding: 32px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+  animation: adflowModalIn 0.3s ease;
+}
+
+.adflow .modal h3 {
+  font-size: 1.25rem;
+  color: var(--white);
+  margin-bottom: 8px;
+}
+
+.adflow .modal .subtitle {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  margin-bottom: 24px;
+}
+
+/* ===== STREAMING TICKER ===== */
+.adflow .streaming-ticker {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.adflow .ticker-symbol {
+  font-size: 1rem;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.adflow .ticker-decimals {
+  font-size: 1.5rem;
+  color: rgba(0, 212, 170, 0.7);
+}
+
+/* ===== CAMPAIGN DASHBOARD ===== */
+.adflow .campaign-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.adflow .campaign-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--white);
+}
+
+.adflow .impression-display {
+  text-align: center;
+  padding: 32px;
+  margin-bottom: 24px;
+}
+
+.adflow .impression-count {
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--white);
+  font-variant-numeric: tabular-nums;
+}
+
+.adflow .impression-total {
+  color: var(--text-dim);
+  font-size: 1.1rem;
+}
+
+/* ===== WALLET VIEW ===== */
+.adflow .wallet-big-balance {
+  text-align: center;
+  padding: 48px 0 32px;
+}
+
+.adflow .wallet-big-balance .amount {
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--white);
+}
+
+.adflow .wallet-big-balance .currency {
+  color: var(--text-dim);
+  font-size: 1.1rem;
+}
+
+.adflow .wallet-address {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--navy);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin-top: 12px;
+}
+
+/* ===== ANALYSIS RESULT ===== */
+.adflow .analysis-result {
+  background: var(--navy);
+  border: 1px solid var(--navy-mid);
+  border-radius: var(--radius-sm);
+  padding: 20px;
+  margin: 16px 0;
+}
+
+.adflow .analysis-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 0.9rem;
+}
+
+.adflow .analysis-row .label {
+  color: var(--text-dim);
+}
+
+.adflow .analysis-row .value {
+  color: var(--white);
+  font-weight: 500;
+}
+
+/* ===== SUCCESS STATE ===== */
+.adflow .success-check {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  margin: 0 auto 20px;
+}
+
+/* ===== TIMELINE ===== */
+.adflow .timeline {
+  padding: 0;
+  list-style: none;
+}
+
+.adflow .timeline-item {
+  display: flex;
+  gap: 16px;
+  padding-bottom: 20px;
+  position: relative;
+}
+
+.adflow .timeline-item::before {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: 32px;
+  bottom: 0;
+  width: 2px;
+  background: var(--navy-mid);
+}
+
+.adflow .timeline-item:last-child::before {
+  display: none;
+}
+
+.adflow .timeline-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.adflow .timeline-content {
+  flex: 1;
+}
+
+.adflow .timeline-title {
+  font-size: 0.9rem;
+  color: var(--white);
+  font-weight: 500;
+}
+
+.adflow .timeline-meta {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.adflow .timeline-amount {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes adflowSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes adflowModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes adflowPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.adflow .pulse {
+  animation: adflowPulse 2s ease-in-out infinite;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .adflow .hero-features {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .adflow .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .adflow .discovery-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .adflow .stepper {
+    flex-wrap: wrap;
+  }
+}
