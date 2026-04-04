@@ -284,6 +284,19 @@ const PublisherOnboard: NextPage = () => {
                     ))}
                   </div>
                 </fieldset>
+                {primaryWallet?.address && (
+                  <fieldset className="fieldset">
+                    <legend className="fieldset-legend">Your wallet</legend>
+                    <input
+                      type="text"
+                      className="input input-bordered w-full bg-base-200 font-mono text-sm opacity-60 cursor-not-allowed"
+                      value={primaryWallet.address}
+                      readOnly
+                      disabled
+                    />
+                    <p className="fieldset-label">Auto-assigned by Dynamic — linked to your Google account</p>
+                  </fieldset>
+                )}
                 <button
                   className="btn btn-primary w-full mt-2"
                   disabled={publishing || !analysis}

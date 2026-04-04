@@ -1,6 +1,6 @@
 "use client";
 
-import { DynamicWidget } from "@dynamic-labs/sdk-react-core";
+import { DynamicWidget, useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { useRouter } from "next/navigation";
 
 type TopbarVariant = "landing" | "onboarding" | "publisher" | "advertiser";
@@ -13,6 +13,7 @@ type TopbarProps = {
 
 export const Topbar = ({ variant, activeTab, onboardingLabel }: TopbarProps) => {
   const router = useRouter();
+  const { user, handleLogOut } = useDynamicContext();
 
   return (
     <div className="sticky top-0 z-50 flex items-center justify-between h-16 px-6 bg-base-200/90 backdrop-blur-md border-b border-base-300">
@@ -56,6 +57,15 @@ export const Topbar = ({ variant, activeTab, onboardingLabel }: TopbarProps) => 
             </button>
           </div>
           <DynamicWidget />
+          {user && (
+            <button
+              className="btn btn-ghost btn-xs text-base-content/30 hover:text-error hover:bg-transparent"
+              onClick={() => handleLogOut()}
+              title="Sign out"
+            >
+              ↪
+            </button>
+          )}
         </div>
       )}
 
@@ -100,6 +110,15 @@ export const Topbar = ({ variant, activeTab, onboardingLabel }: TopbarProps) => 
             </button>
           </div>
           <DynamicWidget />
+          {user && (
+            <button
+              className="btn btn-ghost btn-xs text-base-content/30 hover:text-error hover:bg-transparent"
+              onClick={() => handleLogOut()}
+              title="Sign out"
+            >
+              ↪
+            </button>
+          )}
         </div>
       )}
     </div>
