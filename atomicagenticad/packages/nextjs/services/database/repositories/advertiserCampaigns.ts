@@ -1,9 +1,10 @@
 import { and, desc, eq } from "drizzle-orm";
 import type { InferInsertModel } from "drizzle-orm";
 import { db } from "~~/services/database/config/postgresClient";
-import { advertiserCampaigns } from "~~/services/database/config/schema";
+import { advertiserCampaigns, advertisers } from "~~/services/database/config/schema";
 import { useInMemoryAdvertisers } from "~~/services/database/repositories/advertisersBackend";
 import * as memory from "~~/services/database/repositories/advertiserCampaignsMemory";
+import * as advertisersMemory from "~~/services/database/repositories/advertisersMemory";
 import type { AdvertiserCampaign } from "~~/types/adflow";
 
 export type { AdvertiserCampaign };
@@ -43,6 +44,28 @@ export type AdvertiserCampaignOnchainUpdate = Pick<
   AdvertiserCampaign,
   "onchainPublisherId" | "onchainDealId" | "escrowAddress" | "fundingTxHash" | "fundedAmountWei"
 >;
+
+export async function getAdvertiserCampaignsByPublisherId(publisherId: string) {
+  if (useInMemoryAdvertisers()) {
+    const campaigns = memory.memoryListCampaignsByPublisherId(publisherId);
+    return campaigns.map(c => ({
+      ...c,
+      advertiserName: advertisersMemory.memoryGetAdvertiserById(c.advertiserId)?.displayName ?? "Unknown",
+    }));
+  }
+
+  const rows = await db
+    .select({
+      campaign: advertiserCampaigns,
+      advertiserName: advertisers.displayName,
+    })
+    .from(advertiserCampaigns)
+    .innerJoin(advertisers, eq(advertiserCampaigns.advertiserId, advertisers.id))
+    .where(eq(advertiserCampaigns.selectedPublisherId, publisherId))
+    .orderBy(desc(advertiserCampaigns.createdAt));
+
+  return rows.map(r => ({ ...r.campaign, advertiserName: r.advertiserName }));
+}
 
 export async function updateAdvertiserCampaignOnchainData(
   campaignId: string,

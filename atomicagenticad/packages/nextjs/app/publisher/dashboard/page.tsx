@@ -71,12 +71,6 @@ function PublisherDashboardInner() {
     void loadDashboard();
   }, [loadDashboard]);
 
-  const revenueParts = useMemo(() => {
-    const total = dashboard?.stats.totalRevenueUsdc ?? "0.00";
-    const [whole, dec = "00"] = total.split(".");
-    return { whole: whole || "0", dec: (dec + "00").slice(0, 2) };
-  }, [dashboard]);
-
   const publisher = dashboard?.publisher;
 
   return (
@@ -96,9 +90,7 @@ function PublisherDashboardInner() {
                 Refresh
               </button>
             ) : null}
-            <span
-              className={`badge badge-lg ${publisher ? "badge-success" : "badge-ghost"}`}
-            >
+            <span className={`badge badge-lg ${publisher ? "badge-success" : "badge-ghost"}`}>
               {publisher ? "Listing active" : "No listing loaded"}
             </span>
           </div>
@@ -169,36 +161,20 @@ function PublisherDashboardInner() {
               </div>
             </div>
 
-            {/* Revenue */}
-            <div className="card bg-base-100 border border-base-300 mb-6 text-center p-8">
-              <p className="text-xs uppercase tracking-widest text-base-content/40 mb-2 m-0">Total revenue (USDC)</p>
-              <div className="flex items-baseline justify-center gap-1 tabular-nums">
-                <span className="text-lg text-base-content/50 font-semibold">$</span>
-                <span className="text-6xl font-extrabold text-primary">{revenueParts.whole}</span>
-                <span className="text-3xl text-primary/70">.{revenueParts.dec}</span>
-                <span className="text-lg text-base-content/50 font-semibold ml-1">USDC</span>
-              </div>
-              <p className="text-sm text-base-content/40 mt-2 m-0">From streaming settlement on active campaigns</p>
-            </div>
-
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
               {[
                 {
-                  value: dashboard.stats.impressionsServed.toLocaleString(),
-                  label: "Impressions served",
+                  value: String(dashboard.stats.activeCampaignCount),
+                  label: "Active campaigns",
                 },
                 {
                   value: `$${dashboard.stats.floorPricePer1kUsd}`,
                   label: "Price / 1K impressions",
                 },
                 {
-                  value: String(dashboard.stats.activeCampaignCount),
-                  label: "Active campaigns",
-                },
-                {
                   value: `$${dashboard.stats.escrowPendingUsdc}`,
-                  label: "Est. value in flight",
+                  label: "Est. value in escrow",
                 },
               ].map(s => (
                 <div key={s.label} className="card bg-base-100 border border-base-300 p-5 text-center">
@@ -211,7 +187,7 @@ function PublisherDashboardInner() {
             {/* Campaigns */}
             <div id="campaigns" className="card bg-base-100 border border-base-300 scroll-mt-24">
               <div className="card-body">
-                <h2 className="card-title">Campaigns</h2>
+                <h2 className="card-title">Active campaigns</h2>
                 {dashboard.campaigns.length === 0 ? (
                   <p className="text-base-content/60 text-sm m-0">
                     No campaigns yet. When advertisers book your inventory, they will appear here.
@@ -223,40 +199,25 @@ function PublisherDashboardInner() {
                         <tr>
                           <th>Advertiser</th>
                           <th>Impressions</th>
-                          <th>Progress</th>
-                          <th>Revenue</th>
+                          <th>Budget</th>
                           <th>Status</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {dashboard.campaigns.map(c => {
-                          const pct =
-                            c.impressionsTotal > 0
-                              ? Math.min(100, (c.impressionsServed / c.impressionsTotal) * 100)
-                              : 0;
-                          return (
-                            <tr key={c.id}>
-                              <td>
-                                <div className="font-semibold text-base-content">{c.advertiserName}</div>
-                                <div className="text-xs text-base-content/50">{c.advertiserCategory ?? "—"}</div>
-                              </td>
-                              <td className="text-sm">
-                                {c.impressionsServed.toLocaleString()} / {c.impressionsTotal.toLocaleString()}
-                              </td>
-                              <td>
-                                <progress className="progress progress-primary w-28" value={pct} max={100} />
-                              </td>
-                              <td className="text-primary font-semibold">${c.revenueUsdc}</td>
-                              <td>
-                                <span
-                                  className={`badge ${c.status === "active" ? "badge-success" : "badge-ghost"}`}
-                                >
-                                  {c.status}
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })}
+                        {dashboard.campaigns.map(c => (
+                          <tr key={c.id}>
+                            <td>
+                              <div className="font-semibold text-base-content">{c.advertiserName}</div>
+                            </td>
+                            <td className="text-sm">{c.impressionsTotal.toLocaleString()}</td>
+                            <td className="text-primary font-semibold">${c.budgetUsdc}</td>
+                            <td>
+                              <span className={`badge ${c.status === "active" ? "badge-success" : "badge-ghost"}`}>
+                                {c.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>

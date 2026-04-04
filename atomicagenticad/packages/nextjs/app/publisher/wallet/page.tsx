@@ -2,22 +2,27 @@
 
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { useEffect, useState } from "react";
-import { useBalance } from "wagmi";
+import { formatUnits } from "viem";
+import { arcTestnet } from "viem/chains";
+import { useBalance, usePublicClient } from "wagmi";
 import type { NextPage } from "next";
 import type { PublisherDashboardResponse } from "~~/app/api/publishers/[id]/dashboard/route";
 import { Topbar } from "~~/components/adflow/Topbar";
 import type { PublisherSessionSummary } from "~~/types/adflow";
+import { DEAL_ESCROW_READ_ABI } from "~~/utils/adflow/dealEscrowAbi";
 import { notification } from "~~/utils/scaffold-eth";
 
 const PublisherWallet: NextPage = () => {
   const { primaryWallet } = useDynamicContext();
   const walletAddress = primaryWallet?.address as `0x${string}` | undefined;
+  const publicClient = usePublicClient({ chainId: arcTestnet.id });
 
   const { data: balance, isLoading: balanceLoading } = useBalance({ address: walletAddress });
 
   const [session, setSession] = useState<PublisherSessionSummary | null>(null);
   const [dashboard, setDashboard] = useState<PublisherDashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [escrowTotal, setEscrowTotal] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -42,6 +47,39 @@ const PublisherWallet: NextPage = () => {
       .finally(() => setLoading(false));
   }, [session?.id]);
 
+  // Read fundedAmount from each active escrow contract
+  useEffect(() => {
+    if (!dashboard || !publicClient) return;
+
+    const escrowAddresses = dashboard.campaigns
+      .map(c => c.escrowAddress)
+      .filter((addr): addr is string => !!addr);
+
+    if (escrowAddresses.length === 0) {
+      setEscrowTotal("0.00");
+      return;
+    }
+
+    Promise.all(
+      escrowAddresses.map(addr =>
+        publicClient.readContract({
+          address: addr as `0x${string}`,
+          abi: DEAL_ESCROW_READ_ABI,
+          functionName: "fundedAmount",
+        }),
+      ),
+    )
+      .then(amounts => {
+        const total = amounts.reduce((sum, a) => sum + a, 0n);
+        setEscrowTotal(parseFloat(formatUnits(total, 18)).toFixed(4));
+      })
+      .catch(() => {
+        // fallback to DB budget sum
+        const fallback = dashboard.stats.escrowPendingUsdc;
+        setEscrowTotal(fallback);
+      });
+  }, [dashboard, publicClient]);
+
   const handleCopy = () => {
     if (!walletAddress) return;
     navigator.clipboard.writeText(walletAddress).then(() => {
@@ -52,8 +90,6 @@ const PublisherWallet: NextPage = () => {
 
   const truncateAddress = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
-  const totalRevenue = dashboard?.stats.totalRevenueUsdc ?? "0.00";
-  const escrowPending = dashboard?.stats.escrowPendingUsdc ?? "0.00";
   const campaigns = dashboard?.campaigns ?? [];
 
   return (
@@ -63,15 +99,14 @@ const PublisherWallet: NextPage = () => {
 
         {/* Balance hero */}
         <div className="text-center py-10">
-          <p className="text-base-content/50 text-sm m-0">Total Earned</p>
+          <p className="text-base-content/50 text-sm m-0">Active campaigns</p>
           {loading ? (
             <div className="flex justify-center py-6"><span className="loading loading-spinner loading-lg text-primary" /></div>
           ) : (
             <div className="flex items-baseline justify-center gap-1 tabular-nums mt-2">
-              <span className="text-lg text-base-content/50 font-semibold">$</span>
-              <span className="text-6xl font-extrabold text-primary">{totalRevenue.split(".")[0]}</span>
-              <span className="text-3xl text-primary/70">.{totalRevenue.split(".")[1] ?? "00"}</span>
-              <span className="text-lg text-base-content/50 font-semibold ml-1">USDC</span>
+              <span className="text-6xl font-extrabold text-primary">
+                {dashboard?.stats.activeCampaignCount ?? 0}
+              </span>
             </div>
           )}
 
@@ -90,13 +125,15 @@ const PublisherWallet: NextPage = () => {
         </div>
 
         {/* Stats grid */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-4 mb-8">
           <div className="card bg-base-100 border border-base-300 p-4 text-center">
-            <div className="text-2xl font-bold text-primary">${totalRevenue}</div>
-            <div className="text-xs uppercase tracking-wider text-base-content/40 mt-1">Received</div>
-          </div>
-          <div className="card bg-base-100 border border-base-300 p-4 text-center">
-            <div className="text-2xl font-bold text-warning">${escrowPending}</div>
+            <div className="text-2xl font-bold text-warning">
+              {escrowTotal === null ? (
+                <span className="loading loading-dots loading-sm" />
+              ) : (
+                `$${escrowTotal}`
+              )}
+            </div>
             <div className="text-xs uppercase tracking-wider text-base-content/40 mt-1">In Escrow</div>
           </div>
           <div className="card bg-base-100 border border-base-300 p-4 text-center">
@@ -109,7 +146,7 @@ const PublisherWallet: NextPage = () => {
           </div>
         </div>
 
-        {/* Campaign revenue table */}
+        {/* Campaign table */}
         <div className="card bg-base-100 border border-base-300">
           <div className="card-body">
             <div className="flex items-center justify-between mb-2">
@@ -126,7 +163,7 @@ const PublisherWallet: NextPage = () => {
                   <thead>
                     <tr>
                       <th>Advertiser</th>
-                      <th>Revenue</th>
+                      <th>Budget</th>
                       <th>Impressions</th>
                       <th>Status</th>
                     </tr>
@@ -135,9 +172,9 @@ const PublisherWallet: NextPage = () => {
                     {campaigns.map(c => (
                       <tr key={c.id}>
                         <td className="text-sm font-medium">{c.advertiserName}</td>
-                        <td className="text-primary font-semibold">${c.revenueUsdc}</td>
+                        <td className="text-primary font-semibold">${c.budgetUsdc}</td>
                         <td className="text-sm text-base-content/50">
-                          {c.impressionsServed.toLocaleString()} / {c.impressionsTotal.toLocaleString()}
+                          {c.impressionsTotal.toLocaleString()}
                         </td>
                         <td>
                           <span className={`badge badge-sm ${c.status === "active" ? "badge-success" : "badge-ghost"}`}>

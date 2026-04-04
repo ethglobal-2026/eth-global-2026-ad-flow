@@ -39,6 +39,12 @@ export function memoryCreateAdvertiserCampaign(values: Insert): AdvertiserCampai
   return row;
 }
 
+export function memoryListCampaignsByPublisherId(publisherId: string): AdvertiserCampaign[] {
+  return [...store]
+    .filter(c => c.selectedPublisherId === publisherId)
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+}
+
 export function memoryUpdateCampaignOnchainData(
   id: string,
   values: Pick<AdvertiserCampaign, "onchainPublisherId" | "onchainDealId" | "escrowAddress" | "fundingTxHash" | "fundedAmountWei">,
