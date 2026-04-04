@@ -119,6 +119,7 @@ Create one escrow contract per advertiser-publisher deal.
 - Validate that the publisher listing exists, is active, and is available.
 - Deploy a fresh escrow contract for the new deal.
 - Record the deal address for indexing and frontend discovery.
+- Create deals that are funded and settled in the chain's native token in v1.
 
 ### Suggested storage
 
@@ -136,6 +137,7 @@ Create one escrow contract per advertiser-publisher deal.
 - The publisher address comes from `PublisherRegistry`.
 - The selected publisher must be active and available for new deals.
 - The escrow is initialized with publisher price and deal terms at creation time.
+- Deal funding and payouts use the native token of the chain.
 
 ## Step 4 - `DealEscrow.sol`
 
@@ -155,7 +157,6 @@ Hold the advertiser’s funds and pay the publisher as impressions are confirmed
 
 - `address advertiser`
 - `address publisher`
-- `address paymentToken`
 - `uint256 pricePerImpression`
 - `uint256 totalBudget`
 - `uint256 maxImpressions`
@@ -181,6 +182,7 @@ Hold the advertiser’s funds and pay the publisher as impressions are confirmed
 
 - The advertiser funds the contract.
 - The publisher receives payments from the contract.
+- In v1, funding and payout use the native token instead of an ERC-20.
 - Impression confirmation should not come from arbitrary users.
 
 ## Step 5 - Chainlink CRE Integration
