@@ -7,7 +7,7 @@ type TopbarVariant = "landing" | "onboarding" | "publisher" | "advertiser";
 
 type TopbarProps = {
   variant: TopbarVariant;
-  activeTab?: "dashboard" | "campaigns" | "wallet" | "discovery" | "order" | "new-campaign" | "settings";
+  activeTab?: "dashboard" | "wallet" | "discovery" | "order" | "new-campaign" | "settings";
   onboardingLabel?: string;
 };
 
@@ -45,12 +45,6 @@ export const Topbar = ({ variant, activeTab, onboardingLabel }: TopbarProps) => 
               onClick={() => router.push("/publisher/dashboard")}
             >
               Dashboard
-            </button>
-            <button
-              className={`btn btn-ghost btn-sm ${activeTab === "campaigns" ? "bg-base-300" : ""}`}
-              onClick={() => router.push("/publisher/dashboard#campaigns")}
-            >
-              Campaigns
             </button>
             <button
               className={`btn btn-ghost btn-sm ${activeTab === "wallet" ? "bg-base-300" : ""}`}
