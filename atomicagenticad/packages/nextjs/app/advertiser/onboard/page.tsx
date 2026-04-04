@@ -58,7 +58,6 @@ const AdvertiserOnboard: NextPage = () => {
       })
       .finally(() => setChecking(false));
   }, [user, step, primaryWallet, router]);
-
   const walletTrimmed = walletAddress.trim();
   const walletLooksValid = /^0x[a-fA-F0-9]{40}$/i.test(walletTrimmed);
 
