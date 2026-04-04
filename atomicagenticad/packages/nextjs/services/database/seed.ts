@@ -38,12 +38,12 @@ async function main() {
 
   await createAdvertiserCampaign({
     advertiserId: adv.id,
+    selectedPublisherId: pub.id,
     productDescription: "BeanBox — premium coffee subscription",
     targetAudience: "Coffee enthusiasts aged 25–45, specialty brewing interest.",
     budgetUsdc: "200.00",
     targetImpressions: 50_000,
     creativeFileName: null,
-    selectedPublisherIds: [pub.id],
   });
 
   await insertPublisherCampaigns([

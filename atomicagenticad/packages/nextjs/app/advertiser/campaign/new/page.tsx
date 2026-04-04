@@ -7,9 +7,9 @@ import { parseEventLogs, parseUnits } from "viem";
 import { arcTestnet } from "viem/chains";
 import { useAccount, usePublicClient, useSwitchChain } from "wagmi";
 import type {
-  CreateAdvertiserCampaignDealRequest,
-  CreateAdvertiserCampaignDealResponse,
-} from "~~/app/api/advertisers/[id]/campaigns/[campaignId]/deals/route";
+  UpdateAdvertiserCampaignOnchainRequest,
+  UpdateAdvertiserCampaignOnchainResponse,
+} from "~~/app/api/advertisers/[id]/campaigns/[campaignId]/onchain/route";
 import type {
   CreateAdvertiserCampaignRequest,
   CreateAdvertiserCampaignResponse,
@@ -35,31 +35,6 @@ function scorePublisherMatch(brief: string, pub: Publisher): number {
   }
   const base = 52 + Math.min(38, hits * 7) + (pub.qualityScore ?? 5);
   return Math.min(98, Math.round(base));
-}
-
-function splitEvenBigInt(total: bigint, count: number): bigint[] {
-  const c = BigInt(count);
-  const base = total / c;
-  let remainder = total % c;
-  const out: bigint[] = [];
-  for (let i = 0; i < count; i++) {
-    const plusOne = remainder > 0n ? 1n : 0n;
-    out.push(base + plusOne);
-    if (remainder > 0n) remainder -= 1n;
-  }
-  return out;
-}
-
-function splitEvenInt(total: number, count: number): number[] {
-  const base = Math.floor(total / count);
-  let remainder = total % count;
-  const out: number[] = [];
-  for (let i = 0; i < count; i++) {
-    const plusOne = remainder > 0 ? 1 : 0;
-    out.push(base + plusOne);
-    if (remainder > 0) remainder -= 1;
-  }
-  return out;
 }
 
 const NewAdvertiserCampaign: NextPage = () => {
@@ -89,7 +64,7 @@ const NewAdvertiserCampaign: NextPage = () => {
   const [publishers, setPublishers] = useState<Publisher[]>([]);
   const [pubsLoading, setPubsLoading] = useState(false);
   const [pubsError, setPubsError] = useState<string | null>(null);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedPublisherId, setSelectedPublisherId] = useState<string | null>(null);
 
   useEffect(() => {
     const raw = sessionStorage.getItem("adflow_advertiser");
@@ -144,14 +119,7 @@ const NewAdvertiserCampaign: NextPage = () => {
     if (step === 2) void loadPublishers();
   }, [step, loadPublishers]);
 
-  const togglePublisher = (id: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+  const togglePublisher = (id: string) => setSelectedPublisherId(prev => (prev === id ? null : id));
 
   const openFilePicker = () => fileInputRef.current?.click();
 
@@ -160,21 +128,20 @@ const NewAdvertiserCampaign: NextPage = () => {
     setCreativeFileName(file?.name ?? null);
   };
 
-  const selectedList = useMemo(() => {
-    return rankedPublishers.filter(({ pub }) => selectedIds.has(pub.id));
-  }, [rankedPublishers, selectedIds]);
+  const selectedPublisher = useMemo(() => {
+    if (!selectedPublisherId) return null;
+    return rankedPublishers.find(({ pub }) => pub.id === selectedPublisherId) ?? null;
+  }, [rankedPublishers, selectedPublisherId]);
 
   const impressionsNum = Number.parseInt(impressions, 10);
-  const perPubImpressions =
-    selectedList.length > 0 && Number.isInteger(impressionsNum) ? Math.floor(impressionsNum / selectedList.length) : 0;
+  const perPubImpressions = selectedPublisher && Number.isInteger(impressionsNum) ? impressionsNum : 0;
 
   const confirmLineEstimates = useMemo(() => {
-    return selectedList.map(({ pub, score }) => {
-      const cpm = Number.parseFloat(pub.floorPricePer1kUsd) || 0;
-      const est = (perPubImpressions / 1000) * cpm;
-      return { pub, score, estUsdc: est };
-    });
-  }, [selectedList, perPubImpressions]);
+    if (!selectedPublisher) return [];
+    const cpm = Number.parseFloat(selectedPublisher.pub.floorPricePer1kUsd) || 0;
+    const est = (perPubImpressions / 1000) * cpm;
+    return [{ pub: selectedPublisher.pub, score: selectedPublisher.score, estUsdc: est }];
+  }, [selectedPublisher, perPubImpressions]);
 
   const estimatedTotalUsdc = confirmLineEstimates.reduce((s, r) => s + r.estUsdc, 0);
 
@@ -317,7 +284,7 @@ const NewAdvertiserCampaign: NextPage = () => {
             {step === 2 && (
               <>
                 <p className="text-sm text-base-content/60 m-0 mb-4">
-                  Select one or more publisher sites. Matches are ranked from your brief and listing metadata (MVP
+                  Select one publisher site. Matches are ranked from your brief and listing metadata (MVP
                   heuristic).
                 </p>
                 {pubsLoading && (
@@ -338,7 +305,7 @@ const NewAdvertiserCampaign: NextPage = () => {
                 {!pubsLoading && !pubsError && rankedPublishers.length > 0 && (
                   <ul className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
                     {rankedPublishers.map(({ pub, score }) => {
-                      const on = selectedIds.has(pub.id);
+                      const on = selectedPublisherId === pub.id;
                       return (
                         <li key={pub.id}>
                           <button
@@ -373,15 +340,14 @@ const NewAdvertiserCampaign: NextPage = () => {
                   <button
                     type="button"
                     className="btn btn-primary flex-[2]"
-                    disabled={selectedIds.size === 0 || publishers.length === 0}
+                    disabled={!selectedPublisher || publishers.length === 0}
                     onClick={() => {
-                      if (selectedIds.size === 0) {
-                        notification.error("Select at least one publisher.");
+                      if (!selectedPublisher) {
+                        notification.error("Select one publisher.");
                         return;
                       }
-                      const missingOnchain = selectedList.filter(({ pub }) => !pub.onchainPublisherId);
-                      if (missingOnchain.length > 0) {
-                        notification.error("One or more selected publishers are not registered on-chain yet.");
+                      if (!selectedPublisher.pub.onchainPublisherId) {
+                        notification.error("Selected publisher is not registered on-chain yet.");
                         return;
                       }
                       setStep(3);
@@ -469,8 +435,8 @@ const NewAdvertiserCampaign: NextPage = () => {
                           setSubmitting(false);
                           return;
                         }
-                        if (imp < selectedList.length) {
-                          notification.error("Target impressions must be at least the number of selected publishers.");
+                        if (!selectedPublisherId) {
+                          notification.error("Select one publisher.");
                           setSubmitting(false);
                           return;
                         }
@@ -481,7 +447,7 @@ const NewAdvertiserCampaign: NextPage = () => {
                           budgetUsdc: budget.trim(),
                           targetImpressions: imp,
                           creativeFileName: creativeFileName ?? undefined,
-                          selectedPublisherIds: [...selectedIds],
+                          selectedPublisherId,
                         };
                         const res = await fetch(`/api/advertisers/${advertiser.id}/campaigns`, {
                           method: "POST",
@@ -527,102 +493,85 @@ const NewAdvertiserCampaign: NextPage = () => {
                           return;
                         }
 
-                        const budgetSplits = splitEvenBigInt(budgetWei, selectedList.length);
-                        const impressionSplits = splitEvenInt(created.targetImpressions, selectedList.length);
+                        if (!selectedPublisher?.pub.onchainPublisherId) {
+                          throw new Error("Selected publisher is missing on-chain ID.");
+                        }
+                        if (!dealFactory) {
+                          throw new Error("DealFactory metadata unavailable.");
+                        }
+                        if (!publicClient) {
+                          throw new Error("Arc public client unavailable.");
+                        }
 
-                        for (let i = 0; i < selectedList.length; i++) {
-                          const selected = selectedList[i];
-                          const onchainPublisherId = selected.pub.onchainPublisherId;
-                          if (!onchainPublisherId) {
-                            notification.error(`Publisher ${selected.pub.name} is missing on-chain ID.`);
-                            setSubmitting(false);
-                            return;
-                          }
-
-                          const dealBudget = budgetSplits[i];
-                          const dealImpressions = impressionSplits[i];
-                          if (dealBudget <= 0n || dealImpressions <= 0) {
-                            notification.error("Invalid per-publisher split; increase budget or impressions.");
-                            setSubmitting(false);
-                            return;
-                          }
-
-                          const txHash = await writeDealFactoryAsync({
+                        const txHash = await writeDealFactoryAsync(
+                          {
                             functionName: "createDeal",
-                            args: [BigInt(onchainPublisherId), dealBudget, BigInt(dealImpressions)],
-                            value: dealBudget,
+                            args: [
+                              BigInt(selectedPublisher.pub.onchainPublisherId),
+                              budgetWei,
+                              BigInt(created.targetImpressions),
+                            ],
+                            value: budgetWei,
                           },
                           {
                             blockConfirmations: 1,
                           },
                         );
-                          if (!txHash) {
-                            setSubmitting(false);
-                            return;
-                          }
+                        if (!txHash) {
+                          throw new Error("Deal transaction failed.");
+                        }
 
-                          if (!dealFactory) {
-                            throw new Error("DealFactory metadata unavailable.");
-                          }
+                        const receipt = await publicClient.waitForTransactionReceipt({
+                          hash: txHash,
+                          confirmations: 1,
+                        });
 
-                          if (!publicClient) {
-                            throw new Error("Arc public client unavailable.");
-                          }
-                          const receipt = await publicClient.waitForTransactionReceipt({
-                            hash: txHash,
-                            confirmations: 1,
-                          });
+                        const parsedLogs = parseEventLogs({
+                          abi: dealFactory.abi,
+                          eventName: "DealCreated",
+                          logs: receipt.logs,
+                          strict: false,
+                        });
 
-                          const parsedLogs = parseEventLogs({
-                            abi: dealFactory.abi,
-                            eventName: "DealCreated",
-                            logs: receipt.logs,
-                            strict: false,
-                          });
-
-                          const matchedLog = parsedLogs.find(log => {
-                            return log.args.publisherId !== undefined && log.args.publisherId?.toString() === onchainPublisherId;
-                          });
-                          const dealId = matchedLog?.args.dealId?.toString();
-                          const escrowAddress = matchedLog?.args.escrow?.toLowerCase();
-
-                          if (!dealId || !escrowAddress) {
-                            throw new Error("On-chain deal creation did not return dealId/escrow address.");
-                          }
-
-                          const dealPayload: CreateAdvertiserCampaignDealRequest = {
-                            publisherId: selected.pub.id,
-                            onchainPublisherId,
-                            onchainDealId: dealId,
-                            escrowAddress,
-                            txHash,
-                            fundedAmountWei: dealBudget.toString(),
-                            maxImpressions: dealImpressions,
-                            status: "funded",
-                          };
-
-                          const dealRes = await fetch(
-                            `/api/advertisers/${advertiser.id}/campaigns/${created.id}/deals`,
-                            {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify(dealPayload),
-                            },
+                        const matchedLog = parsedLogs.find(log => {
+                          return (
+                            log.args.publisherId !== undefined &&
+                            log.args.publisherId?.toString() === selectedPublisher.pub.onchainPublisherId
                           );
+                        });
+                        const dealId = matchedLog?.args.dealId?.toString();
+                        const escrowAddress = matchedLog?.args.escrow?.toLowerCase();
 
-                          const dealData: CreateAdvertiserCampaignDealResponse | { error?: string } = await dealRes
-                            .json()
-                            .catch(() => ({}));
-                          if (!dealRes.ok) {
-                            const reason =
-                              typeof dealData === "object" &&
-                              dealData &&
-                              "error" in dealData &&
-                              typeof dealData.error === "string"
-                                ? dealData.error
-                                : "Failed to persist funded deal.";
-                            throw new Error(reason);
-                          }
+                        if (!dealId || !escrowAddress) {
+                          throw new Error("On-chain deal creation did not return dealId/escrow address.");
+                        }
+
+                        const onchainPayload: UpdateAdvertiserCampaignOnchainRequest = {
+                          onchainPublisherId: selectedPublisher.pub.onchainPublisherId,
+                          onchainDealId: dealId,
+                          escrowAddress,
+                          fundingTxHash: txHash,
+                          fundedAmountWei: budgetWei.toString(),
+                        };
+
+                        const onchainRes = await fetch(`/api/advertisers/${advertiser.id}/campaigns/${created.id}/onchain`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify(onchainPayload),
+                        });
+
+                        const onchainData: UpdateAdvertiserCampaignOnchainResponse | { error?: string } = await onchainRes
+                          .json()
+                          .catch(() => ({}));
+                        if (!onchainRes.ok) {
+                          const reason =
+                            typeof onchainData === "object" &&
+                            onchainData &&
+                            "error" in onchainData &&
+                            typeof onchainData.error === "string"
+                              ? onchainData.error
+                              : "Failed to persist campaign on-chain data.";
+                          throw new Error(reason);
                         }
 
                         notification.success("Campaign created and escrow funded.");

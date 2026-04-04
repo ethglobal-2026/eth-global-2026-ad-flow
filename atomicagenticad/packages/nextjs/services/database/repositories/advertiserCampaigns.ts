@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import type { InferInsertModel } from "drizzle-orm";
 import { db } from "~~/services/database/config/postgresClient";
 import { advertiserCampaigns } from "~~/services/database/config/schema";
@@ -37,4 +37,25 @@ export async function createAdvertiserCampaign(row: NewAdvertiserCampaign) {
     throw new Error("Advertiser campaign insert did not return a row");
   }
   return created;
+}
+
+export type AdvertiserCampaignOnchainUpdate = Pick<
+  AdvertiserCampaign,
+  "onchainPublisherId" | "onchainDealId" | "escrowAddress" | "fundingTxHash" | "fundedAmountWei"
+>;
+
+export async function updateAdvertiserCampaignOnchainData(
+  campaignId: string,
+  advertiserId: string,
+  values: AdvertiserCampaignOnchainUpdate,
+) {
+  if (useInMemoryAdvertisers()) {
+    return memory.memoryUpdateCampaignOnchainData(campaignId, values);
+  }
+  const [updated] = await db
+    .update(advertiserCampaigns)
+    .set(values)
+    .where(and(eq(advertiserCampaigns.id, campaignId), eq(advertiserCampaigns.advertiserId, advertiserId)))
+    .returning();
+  return updated;
 }

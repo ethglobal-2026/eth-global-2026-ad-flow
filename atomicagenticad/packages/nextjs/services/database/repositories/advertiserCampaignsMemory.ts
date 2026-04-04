@@ -28,8 +28,27 @@ export function memoryCreateAdvertiserCampaign(values: Insert): AdvertiserCampai
     budgetUsdc: values.budgetUsdc,
     targetImpressions: values.targetImpressions,
     creativeFileName: values.creativeFileName ?? null,
-    selectedPublisherIds: values.selectedPublisherIds ?? [],
+    selectedPublisherId: values.selectedPublisherId ?? null,
+    onchainPublisherId: values.onchainPublisherId ?? null,
+    onchainDealId: values.onchainDealId ?? null,
+    escrowAddress: values.escrowAddress ?? null,
+    fundingTxHash: values.fundingTxHash ?? null,
+    fundedAmountWei: values.fundedAmountWei ?? null,
   };
   store.push(row);
   return row;
+}
+
+export function memoryUpdateCampaignOnchainData(
+  id: string,
+  values: Pick<AdvertiserCampaign, "onchainPublisherId" | "onchainDealId" | "escrowAddress" | "fundingTxHash" | "fundedAmountWei">,
+): AdvertiserCampaign | undefined {
+  const idx = store.findIndex(c => c.id === id);
+  if (idx < 0) return undefined;
+  const next: AdvertiserCampaign = {
+    ...store[idx],
+    ...values,
+  };
+  store[idx] = next;
+  return next;
 }

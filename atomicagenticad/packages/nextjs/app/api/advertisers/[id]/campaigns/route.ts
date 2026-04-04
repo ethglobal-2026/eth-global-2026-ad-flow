@@ -17,8 +17,8 @@ export type CreateAdvertiserCampaignRequest = {
   budgetUsdc: string;
   targetImpressions: number;
   creativeFileName?: string | null;
-  /** Publisher UUIDs chosen for this flight (must exist). */
-  selectedPublisherIds: string[];
+  /** Single publisher UUID chosen for this campaign. */
+  selectedPublisherId: string;
 };
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     const body = await request.json();
-    const { productDescription, targetAudience, budgetUsdc, targetImpressions, creativeFileName, selectedPublisherIds } =
+    const { productDescription, targetAudience, budgetUsdc, targetImpressions, creativeFileName, selectedPublisherId } =
       body as CreateAdvertiserCampaignRequest;
 
     if (typeof productDescription !== "string" || !productDescription.trim()) {
@@ -114,23 +114,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "creativeFileName must be a string" }, { status: 400 });
     }
 
-    if (!Array.isArray(selectedPublisherIds) || selectedPublisherIds.length === 0) {
-      return NextResponse.json({ error: "selectedPublisherIds must be a non-empty array of publisher UUIDs" }, { status: 400 });
+    if (typeof selectedPublisherId !== "string" || !UUID_RE.test(selectedPublisherId)) {
+      return NextResponse.json({ error: "selectedPublisherId must be a valid publisher UUID" }, { status: 400 });
     }
-
-    if (selectedPublisherIds.length > 24) {
-      return NextResponse.json({ error: "Too many publishers selected (max 24)" }, { status: 400 });
-    }
-
-    const uniqueIds = [...new Set(selectedPublisherIds)];
-    for (const pid of uniqueIds) {
-      if (typeof pid !== "string" || !UUID_RE.test(pid)) {
-        return NextResponse.json({ error: "Each selectedPublisherIds entry must be a valid UUID" }, { status: 400 });
-      }
-      const pub = await getPublisherById(pid);
-      if (!pub) {
-        return NextResponse.json({ error: `Publisher not found: ${pid}` }, { status: 400 });
-      }
+    const pub = await getPublisherById(selectedPublisherId);
+    if (!pub) {
+      return NextResponse.json({ error: `Publisher not found: ${selectedPublisherId}` }, { status: 400 });
     }
 
     const campaign = await createAdvertiserCampaign({
@@ -141,7 +130,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       targetImpressions,
       creativeFileName:
         typeof creativeFileName === "string" && creativeFileName.trim() ? trunc(creativeFileName.trim(), 512) : null,
-      selectedPublisherIds: uniqueIds,
+      selectedPublisherId,
     });
 
     return NextResponse.json(campaign, { status: 201 });
