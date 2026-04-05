@@ -5,9 +5,9 @@
 
 ## Contract Addresses
 
-- `AdvertiserRegistry`: `0x4f87AFb91B3A44C5716D4Ebb137a697C713d0741`
-- `DealFactory`: `0x6Bc10084df3E49274Ba80b7eAAe59561333F989F`
-- `PublisherRegistry`: `0xD2e2bf69Cc4A3175e6026b29Af05b67dA05205c2`
+- `AdvertiserRegistry`: `0x21f0FCa55D98E7A54183991358Ca27b418Be0389`
+- `PublisherRegistry`: `0xFfA9DDA58f8FD0533C429D716DFC9699D58dF32b`
+- `DealFactory`: `0xfFb9f301269d42cF5B7DA8BEF29d9f555FCB4006`
 
 ## Deployment Artifacts
 
